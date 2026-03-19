@@ -1,0 +1,852 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLMs: Inside Out</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reset.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.css">
+<style>
+/* ── Root variables ─────────────────────────────────────────────────────── */
+:root {
+  --bg:        #0a0e1a;
+  --bg2:       #0f1525;
+  --bg3:       #151c30;
+  --surface:   #1a2238;
+  --border:    #243050;
+  --accent:    #4af0c4;
+  --accent2:   #f06060;
+  --accent3:   #7b9cff;
+  --text:      #e8eaf2;
+  --muted:     #7a85a0;
+  --code-bg:   #0d1120;
+  --font-head: 'Syne', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+}
+
+/* ── Base ───────────────────────────────────────────────────────────────── */
+.reveal-viewport { background: var(--bg); }
+.reveal { font-family: var(--font-mono); color: var(--text); font-size: 18px; }
+
+/* Subtle grid background */
+.reveal-viewport::before {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    linear-gradient(rgba(74,240,196,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(74,240,196,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ── Slide base ─────────────────────────────────────────────────────────── */
+.reveal .slides section {
+  text-align: left;
+  padding: 0 60px;
+  box-sizing: border-box;
+  height: 100%;
+  display: flex !important;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* ── Headings ───────────────────────────────────────────────────────────── */
+.reveal h1, .reveal h2, .reveal h3 {
+  font-family: var(--font-head);
+  color: var(--text);
+  text-transform: none;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.5em;
+}
+.reveal h1 { font-size: 2.6em; font-weight: 800; line-height: 1.1; }
+.reveal h2 { font-size: 1.6em; font-weight: 700; }
+.reveal h2::after {
+  content: '';
+  display: block;
+  width: 40px; height: 3px;
+  background: var(--accent);
+  margin-top: 10px;
+  border-radius: 2px;
+}
+.reveal h3 { font-size: 1.1em; font-weight: 700; color: var(--accent); }
+
+/* ── Lists ──────────────────────────────────────────────────────────────── */
+.reveal ul { list-style: none; padding: 0; margin: 0; }
+.reveal ul li {
+  padding: 5px 0 5px 1.4em;
+  position: relative;
+  color: var(--text);
+  font-size: 0.88em;
+  line-height: 1.6;
+}
+.reveal ul li::before {
+  content: '▸';
+  color: var(--accent);
+  position: absolute; left: 0;
+  font-size: 0.85em;
+}
+.reveal ul ul li::before { color: var(--accent3); content: '◦'; }
+.reveal ul ul li { font-size: 0.9em; color: var(--muted); }
+
+/* ── Code ───────────────────────────────────────────────────────────────── */
+.reveal pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  padding: 16px 20px;
+  font-size: 0.72em;
+  line-height: 1.6;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  width: 100%;
+  margin: 0;
+  white-space: pre;
+  overflow-x: auto;
+}
+.reveal code { font-family: var(--font-mono); color: var(--accent); background: none; }
+.reveal pre code { color: #c8d3f5; background: none; padding: 0; }
+
+/* ── Keyword highlights inside pre ─────────────────────────────────────── */
+.kw  { color: #7b9cff; }
+.st  { color: #f0a060; }
+.cm  { color: #4a5568; font-style: italic; }
+.nm  { color: #4af0c4; }
+.op  { color: #f06060; }
+
+/* ── Accent text ────────────────────────────────────────────────────────── */
+.reveal strong { color: var(--accent); font-weight: 700; }
+.reveal em { color: var(--accent3); font-style: normal; }
+
+/* ── Tag/pill ───────────────────────────────────────────────────────────── */
+.tag {
+  display: inline-block;
+  background: rgba(74,240,196,0.12);
+  border: 1px solid rgba(74,240,196,0.3);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.7em;
+  padding: 2px 10px;
+  border-radius: 2px;
+  margin: 2px 3px;
+}
+.tag.red   { background: rgba(240,96,96,0.12); border-color: rgba(240,96,96,0.3); color: var(--accent2); }
+.tag.blue  { background: rgba(123,156,255,0.12); border-color: rgba(123,156,255,0.3); color: var(--accent3); }
+
+/* ── Cards / panels ─────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px 20px;
+  font-size: 0.82em;
+}
+.card.green { border-left: 3px solid var(--accent); }
+.card.red   { border-left: 3px solid var(--accent2); }
+.card.blue  { border-left: 3px solid var(--accent3); }
+.card h3 { margin: 0 0 8px; font-size: 0.9em; }
+
+/* ── Two-column layout ──────────────────────────────────────────────────── */
+.cols { display: grid; gap: 28px; }
+.cols.c2 { grid-template-columns: 1fr 1fr; }
+.cols.c2l { grid-template-columns: 1.1fr 0.9fr; }
+
+/* ── Pipeline / flow diagrams ───────────────────────────────────────────── */
+.pipeline {
+  display: flex; align-items: center; gap: 0;
+  flex-wrap: nowrap; margin: 16px 0;
+}
+.pipe-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px 14px;
+  font-size: 0.72em;
+  text-align: center;
+  flex: 1;
+  line-height: 1.3;
+}
+.pipe-box strong { display: block; color: var(--accent); font-size: 1.05em; }
+.pipe-box small { color: var(--muted); font-size: 0.85em; }
+.pipe-arrow {
+  color: var(--accent);
+  font-size: 1.1em;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+.pipe-arrow.loop {
+  writing-mode: horizontal-tb;
+  display: block;
+  text-align: center;
+  color: var(--accent2);
+}
+
+/* ── RAG vertical flow ──────────────────────────────────────────────────── */
+.rag-flow { display: flex; flex-direction: column; gap: 6px; }
+.rag-step {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent3);
+  border-radius: 4px;
+  padding: 8px 14px;
+  font-size: 0.75em;
+}
+.rag-step::before { content: '↓ '; color: var(--muted); }
+.rag-step:first-child::before { content: ''; }
+
+/* ── Agent circles ──────────────────────────────────────────────────────── */
+.agent-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 12px;
+  align-items: center;
+  justify-items: center;
+  max-width: 500px;
+  margin: 0 auto;
+}
+.agent-node {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  width: 100px; height: 100px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  font-size: 0.7em; font-weight: 700;
+  text-align: center; line-height: 1.3;
+}
+.agent-node.center { border-color: var(--accent); color: var(--accent); }
+.agent-node.mem    { border-color: var(--accent3); color: var(--accent3); }
+.agent-node.tools  { border-color: var(--accent2); color: var(--accent2); }
+.agent-node.plan   { border-color: #f0c060; color: #f0c060; }
+
+/* ── Table ──────────────────────────────────────────────────────────────── */
+.reveal table {
+  border-collapse: collapse;
+  font-size: 0.75em;
+  width: 100%;
+}
+.reveal table th {
+  border-bottom: 2px solid var(--accent);
+  padding: 8px 12px;
+  text-align: left;
+  color: var(--accent);
+  font-family: var(--font-head);
+  font-weight: 700;
+}
+.reveal table td {
+  border-bottom: 1px solid var(--border);
+  padding: 7px 12px;
+  color: var(--text);
+}
+.reveal table tr:hover td { background: var(--surface); }
+.yes { color: var(--accent); font-weight: 700; }
+.no  { color: var(--muted); }
+
+/* ── Alert box ──────────────────────────────────────────────────────────── */
+.alert {
+  background: rgba(74,240,196,0.07);
+  border: 1px solid rgba(74,240,196,0.25);
+  border-radius: 4px;
+  padding: 12px 18px;
+  font-size: 0.8em;
+  margin-top: 12px;
+  line-height: 1.5;
+}
+.alert.red {
+  background: rgba(240,96,96,0.07);
+  border-color: rgba(240,96,96,0.25);
+}
+.alert-label {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 4px;
+}
+.alert.red .alert-label { color: var(--accent2); }
+
+/* ── Title slide ────────────────────────────────────────────────────────── */
+#title-slide {
+  justify-content: flex-end !important;
+  padding-bottom: 60px !important;
+}
+#title-slide .eyebrow {
+  font-size: 0.72em;
+  color: var(--accent);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+#title-slide h1 { font-size: 3.2em; line-height: 1.0; margin-bottom: 16px; }
+#title-slide h1 span { color: var(--accent); }
+#title-slide .subtitle {
+  font-size: 0.85em;
+  color: var(--muted);
+  margin-bottom: 32px;
+}
+#title-slide .meta {
+  display: flex; gap: 24px;
+  font-size: 0.72em; color: var(--muted);
+}
+#title-slide .meta span { color: var(--text); }
+
+/* ── Section dividers ───────────────────────────────────────────────────── */
+.section-slide {
+  justify-content: center !important;
+  align-items: flex-start !important;
+}
+.section-slide .section-num {
+  font-size: 6em;
+  font-family: var(--font-head);
+  font-weight: 800;
+  color: rgba(74,240,196,0.08);
+  line-height: 1;
+  margin-bottom: -20px;
+}
+.section-slide h1 {
+  font-size: 6em;
+  font-family: var(--font-head);
+  font-weight: 800;
+  color: rgba(74,240,196,0.08);
+  line-height: 1;
+  margin-bottom: -20px;
+}
+.section-slide h2 { font-size: 2.2em; }
+.section-slide h2::after { display: none; }
+.section-slide .desc { color: var(--muted); font-size: 0.8em; margin-top: 12px; }
+
+/* ── Equation display ───────────────────────────────────────────────────── */
+.eq-box {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent3);
+  border-radius: 4px;
+  padding: 14px 20px;
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  color: var(--accent3);
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+.eq-box small { display: block; color: var(--muted); font-size: 0.8em; margin-top: 6px; }
+
+/* ── Progress bar ───────────────────────────────────────────────────────── */
+.reveal .progress { background: var(--bg3); height: 3px; }
+.reveal .progress span { background: var(--accent); }
+
+/* ── Slide number ───────────────────────────────────────────────────────── */
+.reveal .slide-number {
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.65em;
+}
+
+/* ── Fragment animations ────────────────────────────────────────────────── */
+.reveal .fragment { opacity: 0.15; }
+.reveal .fragment.visible { opacity: 1; }
+
+/* ── Scrollable slide content if overflow ───────────────────────────────── */
+.reveal .slides section.scrollable { overflow-y: auto; }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ══════════════════════════════════════════════════════ TITLE -->
+<section id="title-slide">
+  <div class="eyebrow">2-Hour Deep Dive · 2026</div>
+  <h1>LLMs:<br><span>Inside Out</span></h1>
+  <div class="subtitle">From Transformers to Agents</div>
+  <div class="meta">
+    Instructor: <span>Your Name</span> &nbsp;·&nbsp;
+    Institution: <span>Your Institution</span>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ AGENDA -->
+<section>
+  <h2>Today's Agenda</h2>
+  <div class="cols c2">
+    <div>
+      <h3>Hour 1 — Lecture</h3>
+      <ul>
+        <li>How LLMs actually work</li>
+        <li>The full training stack</li>
+        <li>Capabilities &amp; honest limits</li>
+        <li>LLMs as scientists (AI Scientist)</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Hour 2 — Hands-On</h3>
+      <ul>
+        <li>Feel the limits of a vanilla LLM</li>
+        <li>Build a RAG pipeline from scratch</li>
+        <li>Break it and fix it</li>
+        <li><em>Demo:</em> Fine-tuning a real model</li>
+      </ul>
+    </div>
+  </div>
+  <div class="alert" style="margin-top:20px">
+    <span class="alert-label">Goal</span>
+    Leave today able to <strong>explain</strong> how LLMs work, <strong>build</strong> a RAG pipeline,
+    and <strong>critically evaluate</strong> what LLMs can and cannot do.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ SECTION 1 -->
+<section class="section-slide">
+  <div class="section-num">01</div>
+  <h2>How LLMs<br>Actually Work</h2>
+  <div class="desc">Tokenisation · Attention · nanoGPT · Scaling laws</div>
+</section>
+
+<!-- ── The core idea -->
+<section>
+  <h2>The Core Idea</h2>
+  <div class="eq-box" style="font-size:1.1em; margin: 20px 0 24px;">
+    P( next token | context )
+    <small>A single objective trained across trillions of tokens</small>
+  </div>
+  <ul>
+    <li>No symbolic rules, no hand-crafted grammar — only <strong>gradient descent</strong></li>
+    <li>Emergent capabilities appear at scale: instruction following, reasoning, code</li>
+  </ul>
+  <div class="alert red" style="margin-top:20px">
+    <span class="alert-label">The surprising part</span>
+    This single objective is sufficient to learn language, facts, reasoning patterns,
+    and even theory of mind. Nobody fully understands why.
+  </div>
+</section>
+
+<!-- ── Tokenisation -->
+<section>
+  <h2>Tokenisation</h2>
+  <div class="cols c2l">
+    <ul>
+      <li>Models don't see <em>words</em> — they see <strong>tokens</strong></li>
+      <li>Byte-Pair Encoding (BPE): iteratively merge the most frequent byte pairs</li>
+      <li><code>"unbelievable"</code> → <code>["un","believ","able"]</code></li>
+      <li>Numbers tokenise poorly — <code>"1024"</code> may split into 1–3 tokens</li>
+      <li>Vocabulary size ≈ 50k–100k tokens</li>
+    </ul>
+    <div class="card blue">
+      <h3>Try it</h3>
+<pre><code><span class="kw">import</span> tiktoken
+enc = tiktoken.get_encoding(
+    <span class="st">"cl100k_base"</span>)
+enc.encode(<span class="st">"Hello, world!"</span>)
+<span class="cm"># [9906, 11, 1917, 0]</span></code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ── Attention -->
+<section>
+  <h2>Attention Intuition</h2>
+  <div style="font-size:0.8em; margin: 16px 0 20px; display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+    <span class="tag">The</span>
+    <span class="tag" style="border-color:rgba(74,240,196,0.8);background:rgba(74,240,196,0.2)">cat <small style="color:var(--accent)">0.6</small></span>
+    <span class="tag">sat</span>
+    <span class="tag">on</span>
+    <span class="tag">the <small style="color:var(--accent3)">0.3</small></span>
+    <span class="tag blue">mat ←</span>
+    <span style="color:var(--muted); margin-left:8px; font-size:0.85em">predicting the next token after "mat"</span>
+  </div>
+  <ul>
+    <li><strong>Self-attention:</strong> every token asks "which other tokens should influence me?"</li>
+    <li><strong>Multi-head attention:</strong> run this query in parallel across h subspaces</li>
+    <li><strong>Position encodings:</strong> inject token order — otherwise the model is a bag of tokens</li>
+  </ul>
+</section>
+
+<!-- ── nanoGPT -->
+<section>
+  <h2>nanoGPT — GPT in ~300 Lines</h2>
+  <div class="cols c2l">
+    <ul>
+      <li>Andrej Karpathy's <strong>nanoGPT</strong> strips GPT-2 to its essence</li>
+      <li>Key files: <code>model.py</code>, <code>train.py</code>, <code>sample.py</code></li>
+      <li>The entire forward pass is ~50 lines of readable PyTorch</li>
+      <li><strong>Key insight:</strong> GPT-4 is nanoGPT + 4 orders of magnitude + engineering</li>
+    </ul>
+<pre><code><span class="kw">class</span> <span class="nm">Block</span>(nn.Module):
+  <span class="kw">def</span> <span class="nm">__init__</span>(self, cfg):
+    super().__init__()
+    self.ln_1 = LayerNorm(cfg.n_embd)
+    self.attn = CausalSelfAttention(cfg)
+    self.ln_2 = LayerNorm(cfg.n_embd)
+    self.mlp  = MLP(cfg)
+
+  <span class="kw">def</span> <span class="nm">forward</span>(self, x):
+    x = x + self.attn(self.ln_1(x))
+    x = x + self.mlp(self.ln_2(x))
+    <span class="kw">return</span> x</code></pre>
+  </div>
+</section>
+
+<!-- ── Scaling laws -->
+<section>
+  <h2>Scaling Laws</h2>
+  <div class="cols c2">
+    <ul>
+      <li>Kaplan et al. (2020) &amp; Hoffmann et al. — Chinchilla (2022)</li>
+      <li>Loss follows a <strong>power law</strong> in parameters N and tokens D</li>
+      <li>Optimal ratio: <strong>D ≈ 20 × N</strong> (Chinchilla scaling)</li>
+      <li>GPT-3 (175B params) was <em>under-trained</em> by this rule</li>
+      <li>Implication: <strong>data</strong> is often the bottleneck, not compute</li>
+    </ul>
+    <div>
+      <div class="eq-box">
+        L(N,D) = A/N^α + B/D^β + L∞
+        <small>irreducible loss + model-size term + data term</small>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ SECTION 2 -->
+<section class="section-slide">
+  <div class="section-num">02</div>
+  <h2>The Full<br>Training Stack</h2>
+  <div class="desc">Pretraining · SFT · LoRA / QLoRA · RLHF · DPO</div>
+</section>
+
+<!-- ── Pretraining pipeline -->
+<section>
+  <h2>From Pretraining to Assistant</h2>
+  <div class="pipeline" style="margin: 24px 0;">
+    <div class="pipe-box"><strong>Pretraining</strong><small>next-token prediction</small></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box"><strong>SFT</strong><small>instruction tuning</small></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box"><strong>RLHF / DPO</strong><small>preference alignment</small></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box" style="border-color:var(--accent)"><strong>Assistant</strong><small>GPT-4, Claude…</small></div>
+  </div>
+  <ul>
+    <li>Each stage <strong>narrows the distribution</strong> — from "predict anything" to "be helpful"</li>
+    <li>Base models are <em>weird</em>: prompt with a toxic prefix and they'll complete it</li>
+    <li>Alignment does not lobotomise the model — it redirects it</li>
+  </ul>
+</section>
+
+<!-- ── LoRA -->
+<section>
+  <h2>Full Fine-Tuning vs. LoRA / QLoRA</h2>
+  <div class="cols c2">
+    <div>
+      <h3>Full fine-tuning</h3>
+      <ul>
+        <li>Update <em>all</em> weights</li>
+        <li>Best performance ceiling</li>
+        <li>Requires full model in GPU VRAM</li>
+        <li>Catastrophic forgetting risk</li>
+      </ul>
+      <h3 style="margin-top:16px">LoRA (Hu et al., 2022)</h3>
+      <ul>
+        <li>Freeze base weights W₀</li>
+        <li>Add low-rank adapter: <strong>W = W₀ + BA</strong>, r ≪ d</li>
+        <li>7B model: 7B params → ~10M trainable</li>
+        <li>QLoRA: quantise base to 4-bit, train adapters in 16-bit</li>
+      </ul>
+    </div>
+<pre><code>LoraConfig(
+  r=<span class="nm">16</span>,           <span class="cm"># rank</span>
+  lora_alpha=<span class="nm">32</span>,  <span class="cm"># scaling</span>
+  target_modules=[
+    <span class="st">"q_proj"</span>,
+    <span class="st">"v_proj"</span>],
+  lora_dropout=<span class="nm">0.05</span>,
+  bias=<span class="st">"none"</span>,
+  task_type=<span class="st">"CAUSAL_LM"</span>
+)</code></pre>
+  </div>
+</section>
+
+<!-- ── DPO -->
+<section>
+  <h2>RLHF vs. DPO</h2>
+  <div class="cols c2">
+    <div>
+      <h3>RLHF (InstructGPT, 2022)</h3>
+      <ul>
+        <li>Train a <strong>reward model</strong> on human preferences</li>
+        <li>Use PPO to optimise the policy against that reward</li>
+        <li>Complex, expensive, prone to reward hacking</li>
+      </ul>
+      <h3 style="margin-top:16px">DPO (Rafailov et al., 2023)</h3>
+      <ul>
+        <li>Skip the reward model entirely</li>
+        <li>Train directly on (chosen y_w, rejected y_l) pairs</li>
+        <li><strong>Same result, far simpler pipeline</strong></li>
+      </ul>
+    </div>
+    <div class="card blue">
+      <h3>DPO loss (intuition)</h3>
+      <div class="eq-box" style="font-size:0.78em; margin-top:8px; text-align:left; line-height:1.7">
+        L = -E[ log σ(<br>
+        &nbsp;&nbsp;β·log π(y_w|x)/π_ref(y_w|x)<br>
+        &nbsp;&nbsp;- β·log π(y_l|x)/π_ref(y_l|x)<br>
+        ) ]
+        <small>Maximise log-ratio of policy probability for <em>chosen</em> over <em>rejected</em></small>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Decision table -->
+<section>
+  <h2>Prompting vs. RAG vs. Fine-Tuning</h2>
+  <table style="margin: 16px 0;">
+    <thead>
+      <tr>
+        <th>Criterion</th>
+        <th>Prompting</th>
+        <th>RAG</th>
+        <th>Fine-tuning</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Knowledge freshness</td><td class="no">Stale</td><td class="yes">✓ Live</td><td class="no">Stale until retrain</td></tr>
+      <tr><td>Custom style / format</td><td class="no">Partial</td><td class="no">✗</td><td class="yes">✓ Yes</td></tr>
+      <tr><td>Private document corpus</td><td class="no">✗</td><td class="yes">✓ Yes</td><td class="no">Leakage risk</td></tr>
+      <tr><td>Latency</td><td class="yes">✓ Fast</td><td class="no">Medium</td><td class="yes">✓ Fast</td></tr>
+      <tr><td>Cost</td><td class="yes">✓ Low</td><td class="no">Medium</td><td class="no">High</td></tr>
+    </tbody>
+  </table>
+  <div class="alert">
+    <span class="alert-label">Rule of thumb</span>
+    Start with prompting → add RAG when the model lacks knowledge → fine-tune only when
+    behaviour cannot be prompted away.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ SECTION 3 -->
+<section class="section-slide">
+  <div class="section-num">03</div>
+  <h2>Capabilities &amp;<br>Honest Limits</h2>
+  <div class="desc">What works · What fails · Benchmarks · Stochastic parrots</div>
+</section>
+
+<!-- ── Strengths & failures -->
+<section>
+  <h2>What LLMs Are (and Aren't) Good At</h2>
+  <div class="cols c2" style="gap:20px">
+    <div class="card green">
+      <h3>✓ Strengths</h3>
+      <ul>
+        <li>Text synthesis, summarisation, translation</li>
+        <li>Code generation &amp; explanation</li>
+        <li>Few-shot analogical reasoning</li>
+        <li>Information extraction from unstructured text</li>
+        <li>Chain-of-thought on well-defined problems</li>
+      </ul>
+    </div>
+    <div class="card red">
+      <h3>✗ Reliable Failures</h3>
+      <ul>
+        <li><strong>Hallucination</strong> — confident fabrication of facts</li>
+        <li>Arithmetic and precise counting</li>
+        <li>Knowledge cutoff — no live data</li>
+        <li>Long-context degradation ("lost in the middle")</li>
+        <li>Consistent multi-step planning</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ── Benchmarks -->
+<section>
+  <h2>Benchmarks — Useful and Gameable</h2>
+  <ul>
+    <li><strong>MMLU</strong> — 57 subjects, multiple choice; tests broad knowledge</li>
+    <li><strong>HumanEval</strong> — Python coding problems; tests functional correctness</li>
+    <li><strong>MATH</strong> — competition mathematics; tests symbolic reasoning</li>
+    <li><strong>GPQA</strong> — PhD-level science questions; harder to overfit</li>
+  </ul>
+  <div class="alert red" style="margin-top:20px">
+    <span class="alert-label">The contamination problem</span>
+    Benchmark datasets leak into pretraining corpora. A model scoring 90% on MMLU
+    may have seen those questions. <strong>Always ask: was this benchmark held out?</strong>
+  </div>
+</section>
+
+<!-- ── Stochastic parrot -->
+<section>
+  <h2>The Stochastic Parrot Debate</h2>
+  <div class="cols c2" style="gap:20px">
+    <div class="card red">
+      <h3>Bender et al. (2021)</h3>
+      <ul>
+        <li>Manipulates form without grounding in meaning</li>
+        <li>No model of the world — only statistical co-occurrence</li>
+        <li>Fluency ≠ understanding</li>
+        <li>Significant environmental &amp; labour costs of scale</li>
+      </ul>
+    </div>
+    <div class="card blue">
+      <h3>Counterpoints</h3>
+      <ul>
+        <li>Emergent reasoning on novel problems suggests some generalisation</li>
+        <li>"Understanding" is not well-defined even for humans</li>
+        <li>Strong performance on held-out tasks is hard to explain by copying alone</li>
+      </ul>
+    </div>
+  </div>
+  <div class="alert" style="margin-top:16px">
+    <span class="alert-label">The honest answer</span>
+    The debate is unsettled. Be sceptical of both "it's just autocomplete" and "it's AGI."
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ SECTION 4 -->
+<section class="section-slide">
+  <div class="section-num">04</div>
+  <h2>LLMs as<br>Scientists</h2>
+  <div class="desc">The AI Scientist · RAG as memory · Agents</div>
+</section>
+
+<!-- ── AI Scientist -->
+<section>
+  <h2>The AI Scientist (Lu et al., 2024)</h2>
+  <div class="pipeline" style="margin: 20px 0;">
+    <div class="pipe-box"><strong>Idea</strong><small>Generation</small></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box"><strong>Experiment</strong><small>runs Python code</small></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box"><strong>Analysis</strong><small>retrieves related work</small></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box"><strong>Paper</strong><small>LaTeX generation</small></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box" style="border-color:var(--accent2)"><strong>Review</strong><small>automated</small></div>
+  </div>
+  <ul>
+    <li>Fully autonomous: idea → experiment → PDF paper, <strong>no human in the loop</strong></li>
+    <li>Uses <strong>RAG</strong> to retrieve related work before writing the introduction</li>
+    <li>Produced papers that passed automated reviewer checks at a NeurIPS-level bar</li>
+  </ul>
+</section>
+
+<!-- ── RAG as memory -->
+<section>
+  <h2>Why RAG is the Memory Layer</h2>
+  <div class="cols c2">
+    <ul>
+      <li>Context window ≈ 128k tokens ≈ ~300 pages</li>
+      <li>A research corpus has <strong>millions</strong> of papers</li>
+      <li>You cannot fit it all in context — you must <strong>retrieve first</strong></li>
+      <li>RAG = <strong>R</strong>etrieval-<strong>A</strong>ugmented <strong>G</strong>eneration</li>
+    </ul>
+    <div class="rag-flow">
+      <div class="rag-step">Query</div>
+      <div class="rag-step">Embed query</div>
+      <div class="rag-step">Retrieve top-k chunks</div>
+      <div class="rag-step">Build prompt + context</div>
+      <div class="rag-step">Generate answer</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Agents -->
+<section>
+  <h2>LLMs + Tools + Memory = Agents</h2>
+  <div style="display:flex; gap:32px; align-items:center; margin-top:16px">
+    <div class="agent-grid">
+      <div></div>
+      <div class="agent-node plan">Planner /<br>Orchestrator</div>
+      <div></div>
+      <div class="agent-node mem">Memory<br>(RAG)</div>
+      <div class="agent-node center">LLM<br>Core</div>
+      <div class="agent-node tools">Tools<br>(Code, APIs)</div>
+    </div>
+    <ul style="flex:1">
+      <li>Memory (RAG) gives the model <strong>knowledge beyond its context</strong></li>
+      <li>Tools let it take <strong>actions in the world</strong> (run code, call APIs)</li>
+      <li>A planner orchestrates <strong>multi-step reasoning loops</strong></li>
+      <li>The AI Scientist is exactly this architecture</li>
+    </ul>
+  </div>
+  <div class="alert" style="margin-top:16px; text-align:center; font-style:italic">
+    "You're about to build the memory layer. Let's go."
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ RESOURCES -->
+<section>
+  <h2>Resources &amp; Next Steps</h2>
+  <div class="cols c2" style="gap:20px">
+    <div class="card">
+      <h3>Must-reads</h3>
+      <ul>
+        <li>Vaswani et al. (2017) — Attention is All You Need</li>
+        <li>Hoffmann et al. (2022) — Chinchilla scaling</li>
+        <li>Hu et al. (2022) — LoRA</li>
+        <li>Rafailov et al. (2023) — DPO</li>
+        <li>Lu et al. (2024) — The AI Scientist</li>
+      </ul>
+    </div>
+    <div class="card blue">
+      <h3>Practical resources</h3>
+      <ul>
+        <li>youtube.com/@AndrejKarpathy</li>
+        <li>Hugging Face TRL docs (DPO &amp; SFT)</li>
+        <li>simonwillison.net</li>
+        <li>github.com/karpathy/nanoGPT</li>
+        <li>github.com/SakanaAI/AI-Scientist</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ Q&A -->
+<section style="text-align:center; justify-content:center !important; align-items:center !important;">
+  <div style="font-family:var(--font-head); font-size:5em; font-weight:800; color:var(--accent); line-height:1">Q&amp;A</div>
+  <div style="color:var(--muted); margin-top:16px; font-size:0.85em">your.email@institution.edu</div>
+  <div style="margin-top:24px">
+    <span class="tag">Colab notebook: [link]</span>
+    <span class="tag blue">Slides: [link]</span>
+  </div>
+</section>
+
+</div><!-- /slides -->
+</div><!-- /reveal -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/markdown/markdown.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/highlight/highlight.min.js"></script>
+<script>
+// Swap the hardcoded slide markup with external `slides.md`.
+// This keeps the rest of the styling/CSS in this file intact.
+(() => {
+  const slidesEl = document.querySelector(".slides");
+  if (!slidesEl) return;
+
+  // Use a template literal to avoid any quoting/escaping issues.
+  slidesEl.innerHTML = `
+    <section data-markdown="slides.md" data-separator="^---\\s*$"></section>
+  `.trim();
+})();
+
+Reveal.initialize({
+  hash: true,
+  slideNumber: 'c/t',
+  progress: true,
+  transition: 'slide',
+  transitionSpeed: 'fast',
+  backgroundTransition: 'fade',
+  controls: true,
+  center: true,
+  width: 1280,
+  height: 720,
+  margin: 0.08,
+  plugins: [ RevealMarkdown, RevealHighlight ]
+});
+</script>
+</body>
+</html>
