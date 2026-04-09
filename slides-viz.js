@@ -5,6 +5,165 @@
 (function () {
   if (typeof Reveal === "undefined") return;
 
+  var C_LABEL = "#c8d3f5";
+  var C_TRACK = "#1a2238";
+  var C_MUTED = "#8892ae";
+  var C_TEXT = "#e8eaf2";
+
+  function softmax(z) {
+    var mx = Math.max.apply(null, z);
+    var ex = z.map(function (t) {
+      return Math.exp(t - mx);
+    });
+    var s = ex.reduce(function (a, b) {
+      return a + b;
+    }, 0);
+    return ex.map(function (e) {
+      return e / s;
+    });
+  }
+
+  function softmaxTemp(z, temp) {
+    var zz = z.map(function (x) {
+      return x / temp;
+    });
+    return softmax(zz);
+  }
+
+  function setupSoftmaxEmbed(section) {
+    if (!section.querySelector("#embed-softmax-root")) return;
+    if (section.dataset.embedSmInit === "1") return;
+    section.dataset.embedSmInit = "1";
+    var root = section.querySelector("#embed-softmax-root");
+    var labels = ["A", "B", "C", "D", "E"];
+    var logits = [3, 2, 1, 0, -1];
+
+    var slidersWrap = document.createElement("div");
+    var barsWrap = document.createElement("div");
+
+    function paint() {
+      var p = softmax(logits);
+      barsWrap.innerHTML = "";
+      labels.forEach(function (lab, i) {
+        var row = document.createElement("div");
+        row.className = "embed-prob-row";
+        row.style.cssText =
+          "display:grid;grid-template-columns:22px 1fr 38px;align-items:center;gap:8px;margin:5px 0;font-size:0.62em;";
+        var labEl = document.createElement("span");
+        labEl.textContent = lab;
+        labEl.style.color = C_LABEL;
+        var wrap = document.createElement("div");
+        wrap.className = "embed-bar-wrap";
+        var fill = document.createElement("div");
+        fill.className = "embed-bar-fill";
+        fill.style.width = p[i] * 100 + "%";
+        wrap.appendChild(fill);
+        var pct = document.createElement("span");
+        pct.textContent = (p[i] * 100).toFixed(0) + "%";
+        pct.style.color = C_MUTED;
+        pct.style.fontSize = "0.95em";
+        row.appendChild(labEl);
+        row.appendChild(wrap);
+        row.appendChild(pct);
+        barsWrap.appendChild(row);
+      });
+    }
+
+    labels.forEach(function (lab, i) {
+      var row = document.createElement("div");
+      row.className = "embed-row";
+      var labEl = document.createElement("span");
+      labEl.textContent = lab;
+      labEl.style.color = C_LABEL;
+      var inp = document.createElement("input");
+      inp.type = "range";
+      inp.min = "-2";
+      inp.max = "4";
+      inp.step = "0.1";
+      inp.value = String(logits[i]);
+      var zv = document.createElement("span");
+      zv.textContent = logits[i].toFixed(1);
+      zv.style.color = C_MUTED;
+      zv.style.fontSize = "0.9em";
+      inp.addEventListener("input", function () {
+        logits[i] = +inp.value;
+        zv.textContent = logits[i].toFixed(1);
+        paint();
+      });
+      row.appendChild(labEl);
+      row.appendChild(inp);
+      row.appendChild(zv);
+      slidersWrap.appendChild(row);
+    });
+
+    root.appendChild(slidersWrap);
+    root.appendChild(barsWrap);
+    paint();
+  }
+
+  function setupTempEmbed(section) {
+    if (!section.querySelector("#embed-temp-root")) return;
+    if (section.dataset.embedTempInit === "1") return;
+    section.dataset.embedTempInit = "1";
+    var root = section.querySelector("#embed-temp-root");
+    var labels = ["A", "B", "C", "D", "E"];
+    var logits = [3, 2, 1, 0, -1];
+
+    var head = document.createElement("div");
+    head.className = "embed-temp-label";
+    var tLab = document.createElement("span");
+    tLab.textContent = "T";
+    var inp = document.createElement("input");
+    inp.type = "range";
+    inp.min = "0.25";
+    inp.max = "1.75";
+    inp.step = "0.05";
+    inp.value = "1";
+    var tv = document.createElement("span");
+    tv.className = "t-val";
+    tv.textContent = "1.00";
+    tv.style.minWidth = "3em";
+    head.appendChild(tLab);
+    head.appendChild(inp);
+    head.appendChild(tv);
+
+    var barsWrap = document.createElement("div");
+
+    function paint() {
+      var T = +inp.value;
+      tv.textContent = T.toFixed(2);
+      var p = softmaxTemp(logits, T);
+      barsWrap.innerHTML = "";
+      labels.forEach(function (lab, i) {
+        var row = document.createElement("div");
+        row.style.cssText =
+          "display:grid;grid-template-columns:22px 1fr 38px;align-items:center;gap:8px;margin:5px 0;font-size:0.62em;";
+        var labEl = document.createElement("span");
+        labEl.textContent = lab;
+        labEl.style.color = C_LABEL;
+        var wrap = document.createElement("div");
+        wrap.className = "embed-bar-wrap";
+        var fill = document.createElement("div");
+        fill.className = "embed-bar-fill";
+        fill.style.width = p[i] * 100 + "%";
+        fill.style.background = "linear-gradient(90deg, #ff6b6b, #8ab4ff)";
+        wrap.appendChild(fill);
+        var pct = document.createElement("span");
+        pct.textContent = (p[i] * 100).toFixed(0) + "%";
+        pct.style.color = C_MUTED;
+        row.appendChild(labEl);
+        row.appendChild(wrap);
+        row.appendChild(pct);
+        barsWrap.appendChild(row);
+      });
+    }
+
+    inp.addEventListener("input", paint);
+    root.appendChild(head);
+    root.appendChild(barsWrap);
+    paint();
+  }
+
   function setupNgramSlide(section) {
     if (!section || section.dataset.vizNgramInit === "1") return;
     var ng = section.querySelector("#ng-svg");
@@ -78,14 +237,14 @@
               "text-anchor": "end",
               "dominant-baseline": "central",
               "font-size": 10,
-              fill: "#555",
+              fill: C_LABEL,
               "font-family": "monospace",
             },
             w
           )
         );
         svgEl.appendChild(
-          e("rect", { x: lW, y: y, width: aW, height: bH, rx: 3, fill: "#f5f5f5" })
+          e("rect", { x: lW, y: y, width: aW, height: bH, rx: 3, fill: C_TRACK })
         );
         svgEl.appendChild(
           e("rect", {
@@ -230,7 +389,7 @@
         b += parseInt(hex.slice(4, 6), 16) * w;
         tw += w;
       });
-      if (!tw) return "#aaa";
+      if (!tw) return C_MUTED;
       return (
         "rgb(" +
         Math.round(r / tw) +
@@ -302,7 +461,7 @@
         svg.appendChild(
           el(
             "text",
-            { x: 40, y: y, "font-size": 10, fill: "#aaa", "font-family": "sans-serif" },
+            { x: 40, y: y, "font-size": 10, fill: C_MUTED, "font-family": "sans-serif" },
             lbl
           )
         );
@@ -363,7 +522,7 @@
             "dominant-baseline": "central",
             "font-size": 11,
             "font-weight": isQ ? 600 : 400,
-            fill: isQ ? c : "#333",
+            fill: isQ ? c : C_TEXT,
             "font-family": "sans-serif",
           }, tok)
         );
@@ -394,8 +553,8 @@
             width: bW,
             height: bH,
             rx: 5,
-            fill: isQ ? "#EF9F2733" : "#f5f5f5",
-            stroke: isQ ? "#EF9F27" : "#ccc",
+            fill: isQ ? "#EF9F2733" : C_TRACK,
+            stroke: isQ ? "#EF9F27" : "#2a3550",
             "stroke-width": isQ ? 1.5 : 0.5,
           })
         );
@@ -407,7 +566,7 @@
             "dominant-baseline": "central",
             "font-size": 11,
             "font-weight": isQ ? 600 : 400,
-            fill: isQ ? "#EF9F27" : "#333",
+            fill: isQ ? "#EF9F27" : C_TEXT,
             "font-family": "sans-serif",
           }, tok)
         );
@@ -479,6 +638,8 @@
     if (!section) return;
     setupNgramSlide(section);
     setupAttnSlide(section);
+    setupSoftmaxEmbed(section);
+    setupTempEmbed(section);
   }
 
   Reveal.on("ready", function () {

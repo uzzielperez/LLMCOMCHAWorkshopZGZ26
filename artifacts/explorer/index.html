@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLMs: Inside Out — Visual explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #050810;
+      --surface: #121a2e;
+      --border: #2a3550;
+      --accent: #5ee9c8;
+      --accent3: #8ab4ff;
+      --coral: #ff6b6b;
+      --text: #e9ecf5;
+      --muted: #8892ae;
+      --font-h: "Bricolage Grotesque", system-ui, sans-serif;
+      --font-m: "JetBrains Mono", monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-m);
+      font-size: 15px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(100% 80% at 100% 0%, rgba(138, 180, 255, 0.07) 0%, transparent 55%),
+        radial-gradient(80% 60% at 0% 100%, rgba(94, 233, 200, 0.06) 0%, transparent 50%),
+        linear-gradient(165deg, var(--bg) 0%, #0a0f1c 100%);
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.05;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+    }
+    .wrap { position: relative; z-index: 1; max-width: 1120px; margin: 0 auto; padding: 0 24px 80px; }
+
+    header.hero {
+      min-height: 72vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 48px 0 32px;
+      border-bottom: 1px solid var(--border);
+    }
+    header.hero h1 {
+      font-family: var(--font-h);
+      font-size: clamp(2.2rem, 5vw, 3.4rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      margin: 0 0 12px;
+      line-height: 1.05;
+    }
+    header.hero h1 span { color: var(--accent); text-shadow: 0 0 40px rgba(94, 233, 200, 0.2); }
+    header.hero p.tag {
+      font-size: 0.68rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 6px;
+      opacity: 0.85;
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    nav.dots {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 16px 0;
+      background: linear-gradient(180deg, rgba(5, 8, 16, 0.95) 60%, transparent);
+      backdrop-filter: blur(8px);
+      margin: 0 -24px;
+      padding-left: 24px;
+      padding-right: 24px;
+    }
+    nav.dots a {
+      font-family: var(--font-m);
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-decoration: none;
+      color: var(--muted);
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(18, 26, 46, 0.6);
+      transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+    nav.dots a:hover, nav.dots a:focus-visible {
+      color: var(--accent);
+      border-color: rgba(94, 233, 200, 0.4);
+      outline: none;
+    }
+
+    section.scene {
+      padding: 56px 0;
+      border-bottom: 1px solid rgba(42, 53, 80, 0.5);
+    }
+    section.scene:last-of-type { border-bottom: 0; }
+    .scene-head {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .scene-num {
+      font-family: var(--font-h);
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.15em;
+      color: var(--accent3);
+      opacity: 0.9;
+    }
+    .scene-head h2 {
+      font-family: var(--font-h);
+      font-size: clamp(1.35rem, 3vw, 1.75rem);
+      font-weight: 800;
+      margin: 0;
+      letter-spacing: -0.03em;
+    }
+    .panel {
+      background: linear-gradient(145deg, rgba(18, 26, 46, 0.95), rgba(10, 15, 28, 0.98));
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 22px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+    /* —— Next-token bars —— */
+    .ctx-line {
+      font-size: 1.05rem;
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+    .ctx-line .blank {
+      display: inline-block;
+      min-width: 3.5em;
+      border-bottom: 2px dashed var(--accent3);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 72px 1fr 48px;
+      align-items: center;
+      gap: 10px;
+      margin: 8px 0;
+      font-size: 0.82rem;
+    }
+    .bar-row .track {
+      height: 22px;
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .bar-row .fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, #7c6fd9, #5ee9c8);
+      transform-origin: left;
+      transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .bar-row.gold .fill { background: linear-gradient(90deg, var(--accent), #7cf5d8); }
+    button.primary {
+      font-family: var(--font-m);
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 10px 18px;
+      margin-top: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--accent);
+      background: rgba(94, 233, 200, 0.12);
+      color: var(--accent);
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+    }
+    button.primary:hover { background: rgba(94, 233, 200, 0.22); }
+    button.primary:active { transform: scale(0.98); }
+
+    /* —— Tokenizer —— */
+    .tok-input {
+      width: 100%;
+      font-family: var(--font-m);
+      font-size: 0.95rem;
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--text);
+      margin-bottom: 14px;
+    }
+    .tok-chunks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-height: 48px;
+    }
+    .chunk {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: rgba(138, 180, 255, 0.12);
+      border: 1px solid rgba(138, 180, 255, 0.35);
+      font-size: 0.85rem;
+      animation: popIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(6px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .chunk:nth-child(6n+2) { border-color: rgba(94, 233, 200, 0.4); background: rgba(94, 233, 200, 0.08); }
+    .chunk:nth-child(6n+3) { border-color: rgba(255, 107, 107, 0.35); background: rgba(255, 107, 107, 0.08); }
+
+    /* —— Logits / loss —— */
+    .logit-grid { display: grid; gap: 12px; margin-top: 8px; }
+    .logit-row {
+      display: grid;
+      grid-template-columns: 80px 1fr 40px;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.8rem;
+    }
+    .logit-row input[type="range"] { width: 100%; accent-color: var(--accent3); }
+    .softmax-bars .bar-row .fill { background: linear-gradient(90deg, var(--accent3), var(--accent)); }
+    .loss-big {
+      font-family: var(--font-h);
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--accent);
+      margin-top: 12px;
+    }
+    .gold-pick { font-size: 0.78rem; color: var(--muted); margin-top: 8px; }
+    .gold-pick label { margin-right: 12px; cursor: pointer; }
+    .gold-pick input { accent-color: var(--accent); }
+
+    /* —— Attention heatmap —— */
+    .attn-wrap { overflow-x: auto; }
+    .attn-table {
+      border-collapse: collapse;
+      font-size: 0.75rem;
+      margin-top: 8px;
+    }
+    .attn-table th, .attn-table td {
+      padding: 8px 10px;
+      text-align: center;
+      border: 1px solid var(--border);
+      min-width: 52px;
+    }
+    .attn-table th { color: var(--accent3); font-weight: 600; }
+    .attn-table td.cell {
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .attn-table td.cell:hover { transform: scale(1.05); z-index: 1; position: relative; }
+
+    /* —— Temperature —— */
+    .temp-control {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin: 16px 0;
+    }
+    .temp-control input[type="range"] { width: min(320px, 100%); accent-color: var(--coral); }
+    .temp-val {
+      font-family: var(--font-h);
+      font-weight: 800;
+      font-size: 1.2rem;
+      color: var(--coral);
+      min-width: 3.5em;
+    }
+
+    /* —— Pipeline —— */
+    .pipe {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    @media (min-width: 720px) {
+      .pipe { flex-wrap: nowrap; }
+    }
+    .pipe-step {
+      flex: 1 1 120px;
+      padding: 16px 14px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--border);
+      text-align: center;
+      font-size: 0.78rem;
+      position: relative;
+      animation: pipeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .pipe-step:nth-child(1) { animation-delay: 0.05s; }
+    .pipe-step:nth-child(2) { animation-delay: 0.15s; }
+    .pipe-step:nth-child(3) { animation-delay: 0.25s; }
+    .pipe-step:nth-child(4) { animation-delay: 0.35s; }
+    .pipe-step strong {
+      display: block;
+      font-family: var(--font-h);
+      font-size: 0.9rem;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+    .pipe-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 1.2rem;
+      padding: 0 4px;
+      flex: 0 0 auto;
+    }
+    @keyframes pipeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    footer.note {
+      margin-top: 40px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      font-size: 0.65rem;
+      color: var(--muted);
+      opacity: 0.75;
+    }
+  </style>
+</head>
+<body>
+  <p class="sr-only">Visual explainer for the LLMs Inside Out deck. All numbers are illustrative teaching aids.</p>
+  <div class="wrap">
+    <header class="hero">
+      <p class="tag">Visual lab</p>
+      <h1>LLMs: <span>Inside Out</span></h1>
+    </header>
+
+    <nav class="dots" aria-label="Jump">
+      <a href="#s1" title="P(next)">①</a>
+      <a href="#s2" title="split">②</a>
+      <a href="#s3" title="loss">③</a>
+      <a href="#s4" title="attention">④</a>
+      <a href="#s5" title="temperature">⑤</a>
+      <a href="#s6" title="stack">⑥</a>
+    </nav>
+
+    <section class="scene" id="s1">
+      <div class="scene-head">
+        <span class="scene-num">01</span>
+        <h2>P(next&nbsp;|&nbsp;ctx)</h2>
+      </div>
+      <div class="panel" title="illustrative">
+        <div class="ctx-line" id="ctx-display"></div>
+        <div id="next-bars"></div>
+        <button type="button" class="primary" id="reshuffle">Again</button>
+      </div>
+    </section>
+
+    <section class="scene" id="s2">
+      <div class="scene-head">
+        <span class="scene-num">02</span>
+        <h2>split</h2>
+      </div>
+      <div class="panel" title="not BPE">
+        <input type="text" class="tok-input" id="tok-in" value="unbelievable 1024" maxlength="80" autocomplete="off" aria-label="Type text">
+        <div class="tok-chunks" id="tok-out" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="scene" id="s3">
+      <div class="scene-head">
+        <span class="scene-num">03</span>
+        <h2>z → σ → −log</h2>
+      </div>
+      <div class="panel" title="sliders + gold">
+        <div class="logit-grid" id="logit-sliders"></div>
+        <p class="gold-pick" id="gold-radios"></p>
+        <div class="softmax-bars" id="softmax-bars"></div>
+        <div class="loss-big" id="loss-val">—</div>
+      </div>
+    </section>
+
+    <section class="scene" id="s4">
+      <div class="scene-head">
+        <span class="scene-num">04</span>
+        <h2>attn</h2>
+      </div>
+      <div class="panel attn-wrap" title="row→col">
+        <div id="attn-root"></div>
+      </div>
+    </section>
+
+    <section class="scene" id="s5">
+      <div class="scene-head">
+        <span class="scene-num">05</span>
+        <h2>T</h2>
+      </div>
+      <div class="panel" title="T scales logits">
+        <div class="temp-control">
+          <label for="temp-range">T</label>
+          <input type="range" id="temp-range" min="0.25" max="2" step="0.05" value="1">
+          <span class="temp-val" id="temp-show">1.00</span>
+        </div>
+        <div id="temp-bars"></div>
+      </div>
+    </section>
+
+    <section class="scene" id="s6">
+      <div class="scene-head">
+        <span class="scene-num">06</span>
+        <h2>stack</h2>
+      </div>
+      <div class="panel">
+        <div class="pipe" role="list">
+          <div class="pipe-step" role="listitem"><strong>pre</strong>data</div>
+          <span class="pipe-arrow" aria-hidden="true">→</span>
+          <div class="pipe-step" role="listitem"><strong>sft</strong>shape</div>
+          <span class="pipe-arrow" aria-hidden="true">→</span>
+          <div class="pipe-step" role="listitem"><strong>pref</strong>align</div>
+          <span class="pipe-arrow" aria-hidden="true">→</span>
+          <div class="pipe-step" role="listitem"><strong>ship</strong>use</div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="note"><code>slides.md</code> · <code>npx serve artifacts/explorer</code></footer>
+  </div>
+
+  <script>
+(function () {
+  "use strict";
+
+  /* —— Scene 1: next token —— */
+  var contexts = [
+    { text: "The cat sat on the ", blank: "mat", opts: [{ w: "mat", p: 0.34 }, { w: "floor", p: 0.22 }, { w: "rug", p: 0.14 }, { w: "sofa", p: 0.11 }, { w: "…", p: 0.19 }] },
+    { text: 'def hello():\n    print("', blank: "Hi", opts: [{ w: "Hi", p: 0.41 }, { w: "Hello", p: 0.18 }, { w: "hey", p: 0.12 }, { w: "…", p: 0.29 }] },
+    { text: "import torch\n", blank: "nn", opts: [{ w: "nn", p: 0.28 }, { w: "Tensor", p: 0.19 }, { w: "optim", p: 0.15 }, { w: "…", p: 0.38 }] }
+  ];
+  var ctxIx = 0;
+
+  function renderCtx() {
+    var c = contexts[ctxIx];
+    document.getElementById("ctx-display").innerHTML =
+      c.text.replace(/\\n/g, "<br>") + '<span class="blank">' + c.blank + "</span>';
+    var root = document.getElementById("next-bars");
+    root.innerHTML = "";
+    c.opts.forEach(function (o, i) {
+      var row = document.createElement("div");
+      row.className = "bar-row" + (o.w === c.blank ? " gold" : "");
+      row.innerHTML =
+        '<span>' + escapeHtml(o.w) + '</span><div class="track"><div class="fill" style="width:0%"></div></div><span>' +
+        Math.round(o.p * 100) +
+        "%</span>";
+      root.appendChild(row);
+      requestAnimationFrame(function () {
+        row.querySelector(".fill").style.width = Math.round(o.p * 100) + "%";
+      });
+    });
+  }
+  function escapeHtml(s) {
+    var d = document.createElement("div");
+    d.textContent = s;
+    return d.innerHTML;
+  }
+  document.getElementById("reshuffle").addEventListener("click", function () {
+    ctxIx = (ctxIx + 1) % contexts.length;
+    renderCtx();
+  });
+  renderCtx();
+
+  /* —— Scene 2: toy tokenizer —— */
+  var tokIn = document.getElementById("tok-in");
+  var tokOut = document.getElementById("tok-out");
+
+  function toyTokenize(s) {
+    s = s.trim();
+    if (!s) return [];
+    var out = [];
+    var m = s.match(/\d+/g);
+    if (m) {
+      var parts = s.split(/(\d+)/);
+      parts.forEach(function (p) {
+        if (!p) return;
+        if (/^\d+$/.test(p)) {
+          p.split("").forEach(function (d) { out.push(d); });
+        } else {
+          roughWordSplit(p).forEach(function (w) { out.push(w); });
+        }
+      });
+    } else {
+      roughWordSplit(s).forEach(function (w) { out.push(w); });
+    }
+    return out;
+  }
+  function roughWordSplit(p) {
+    if (p.length <= 6) return [p];
+    var chunks = [];
+    for (var i = 0; i < p.length; i += 4) {
+      chunks.push(p.slice(i, i + 4));
+    }
+    return chunks;
+  }
+
+  function paintTok() {
+    var parts = toyTokenize(tokIn.value);
+    tokOut.innerHTML = "";
+    parts.forEach(function (p, i) {
+      var el = document.createElement("span");
+      el.className = "chunk";
+      el.textContent = p;
+      el.style.animationDelay = i * 0.04 + "s";
+      tokOut.appendChild(el);
+    });
+  }
+  tokIn.addEventListener("input", paintTok);
+  paintTok();
+
+  /* —— Scene 3: logits + softmax + loss —— */
+  var labels = ["mat", "floor", "rug", "sofa"];
+  var logits = [2.2, 1.1, 0.4, -0.3];
+  var goldIndex = 0;
+
+  function softmax(arr, temp) {
+    temp = temp || 1;
+    var mx = Math.max.apply(null, arr);
+    var ex = arr.map(function (z) { return Math.exp((z - mx) / temp); });
+    var s = ex.reduce(function (a, b) { return a + b; }, 0);
+    return ex.map(function (e) { return e / s; });
+  }
+
+  var logitRoot = document.getElementById("logit-sliders");
+  labels.forEach(function (lab, i) {
+    var row = document.createElement("div");
+    row.className = "logit-row";
+    row.innerHTML =
+      "<span>" +
+      escapeHtml(lab) +
+      '</span><input type="range" min="-2" max="4" step="0.1" data-i="' +
+      i +
+      '" value="' +
+      logits[i] +
+      '"><span class="z-val">' +
+      logits[i].toFixed(1) +
+      "</span>";
+    logitRoot.appendChild(row);
+  });
+  logitRoot.querySelectorAll('input[type="range"]').forEach(function (inp) {
+    inp.addEventListener("input", function () {
+      var i = +inp.getAttribute("data-i");
+      logits[i] = +inp.value;
+      inp.parentElement.querySelector(".z-val").textContent = (+inp.value).toFixed(1);
+      updateLossUI();
+    });
+  });
+
+  var goldRoot = document.getElementById("gold-radios");
+  labels.forEach(function (lab, i) {
+    var labEl = document.createElement("label");
+    labEl.innerHTML = '<input type="radio" name="gold" value="' + i + '"' + (i === goldIndex ? " checked" : "") + "> " + escapeHtml(lab);
+    labEl.querySelector("input").addEventListener("change", function () {
+      goldIndex = +this.value;
+      updateLossUI();
+    });
+    goldRoot.appendChild(labEl);
+  });
+
+  function updateLossUI() {
+    var p = softmax(logits, 1);
+    var sb = document.getElementById("softmax-bars");
+    sb.innerHTML = "";
+    labels.forEach(function (lab, i) {
+      var row = document.createElement("div");
+      row.className = "bar-row" + (i === goldIndex ? " gold" : "");
+      row.innerHTML =
+        '<span>' +
+        escapeHtml(lab) +
+        '</span><div class="track"><div class="fill" style="width:' +
+        (p[i] * 100) +
+        '%"></div></div><span>' +
+        (p[i] * 100).toFixed(1) +
+        "%</span>";
+      sb.appendChild(row);
+    });
+    var pg = p[goldIndex];
+    var L = -Math.log(Math.max(pg, 1e-12));
+    document.getElementById("loss-val").textContent = "\u2212log = " + L.toFixed(3);
+  }
+  updateLossUI();
+
+  /* —— Scene 4: attention —— */
+  var toks = ["The", "cat", "sat"];
+  var attnData = [
+    [0.55, 0.25, 0.2],
+    [0.15, 0.65, 0.2],
+    [0.1, 0.2, 0.7]
+  ];
+  function heatColor(w) {
+    var r = Math.floor(20 + w * 120);
+    var g = Math.floor(40 + w * 180);
+    var b = Math.floor(60 + w * 140);
+    return "rgb(" + r + "," + g + "," + b + ")";
+  }
+  var attnRoot = document.getElementById("attn-root");
+  var table = document.createElement("table");
+  table.className = "attn-table";
+  var thead = document.createElement("thead");
+  var hr = document.createElement("tr");
+  hr.appendChild(document.createElement("th"));
+  toks.forEach(function (t) {
+    var th = document.createElement("th");
+    th.textContent = t;
+    hr.appendChild(th);
+  });
+  thead.appendChild(hr);
+  table.appendChild(thead);
+  var tb = document.createElement("tbody");
+  toks.forEach(function (rowTok, i) {
+    var tr = document.createElement("tr");
+    var th = document.createElement("th");
+    th.textContent = rowTok;
+    tr.appendChild(th);
+    toks.forEach(function (_, j) {
+      var td = document.createElement("td");
+      td.className = "cell";
+      var w = attnData[i][j];
+      td.textContent = w.toFixed(2);
+      td.style.background = heatColor(w);
+      td.title = "row " + rowTok + " → col " + toks[j];
+      td.addEventListener("click", function () {
+        bumpAttn(i, j);
+      });
+      tr.appendChild(td);
+    });
+    tb.appendChild(tr);
+  });
+  table.appendChild(tb);
+  attnRoot.appendChild(table);
+
+  function bumpAttn(ii, jj) {
+    for (var a = 0; a < 3; a++) {
+      for (var b = 0; b < 3; b++) {
+        if (a === ii && b === jj) attnData[a][b] = Math.min(1, attnData[a][b] + 0.08);
+        else attnData[a][b] *= 0.92;
+      }
+    }
+    normalizeAttn();
+    refreshAttnCells();
+  }
+  function normalizeAttn() {
+    for (var i = 0; i < 3; i++) {
+      var s = 0;
+      for (var j = 0; j < 3; j++) s += attnData[i][j];
+      for (j = 0; j < 3; j++) attnData[i][j] /= s;
+    }
+  }
+  function refreshAttnCells() {
+    var rows = tb.querySelectorAll("tr");
+    rows.forEach(function (tr, i) {
+      var cells = tr.querySelectorAll("td.cell");
+      cells.forEach(function (td, j) {
+        var w = attnData[i][j];
+        td.textContent = w.toFixed(2);
+        td.style.background = heatColor(w);
+      });
+    });
+  }
+
+  /* —— Scene 5: temperature —— */
+  var tempLogits = [2.0, 1.5, 0.8, 0.2, -0.5];
+  var tempLabels = ["the", "a", "an", "this", "∅"];
+  var tempRange = document.getElementById("temp-range");
+  var tempShow = document.getElementById("temp-show");
+  var tempBars = document.getElementById("temp-bars");
+
+  function renderTemp() {
+    var T = +tempRange.value;
+    tempShow.textContent = T.toFixed(2);
+    var p = softmax(tempLogits, T);
+    tempBars.innerHTML = "";
+    tempLabels.forEach(function (lab, i) {
+      var row = document.createElement("div");
+      row.className = "bar-row";
+      row.innerHTML =
+        '<span>' +
+        escapeHtml(lab) +
+        '</span><div class="track"><div class="fill" style="width:' +
+        (p[i] * 100) +
+        '%;background:linear-gradient(90deg,#ff6b6b,#8ab4ff)"></div></div><span>' +
+        (p[i] * 100).toFixed(1) +
+        "%</span>";
+      tempBars.appendChild(row);
+    });
+  }
+  tempRange.addEventListener("input", renderTemp);
+  renderTemp();
+})();
+  </script>
+</body>
+</html>

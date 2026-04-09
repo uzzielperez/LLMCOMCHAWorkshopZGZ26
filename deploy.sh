@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
-# Deploy The Branch to the-branch.surge.sh
+# Deploy the whole project folder to Surge (static hosting).
+#
+# - Site root "/" is the deck: index.html (+ slides.md, slides-viz.js, …).
+# - The interactive explainer lives at: /artifacts/explorer/  (index.html there).
+#   Full URL: https://YOUR_DOMAIN.surge.sh/artifacts/explorer/
+#
 set -e
 cd "$(dirname "$0")"
 

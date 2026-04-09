@@ -475,14 +475,225 @@
 /* ── Scrollable slide content if overflow ───────────────────────────────── */
 .reveal .slides section.scrollable { overflow-y: auto; }
 
-/* ── Visualization slides ─────────────────────────────────── */
+/* ── Visualization slides (same “lab” chrome as Multi-Head Live) ─────────── */
 .reveal .slides section.viz-slide {
-  padding: 0.6rem 1.2rem !important;
+  padding: 0.55rem 1.1rem !important;
   font-size: 22px;
+  justify-content: flex-start;
 }
 .reveal .slides section.viz-slide h2 {
-  font-size: 1.1em;
-  margin-bottom: 0.2em;
+  font-size: 1.12em;
+  margin-bottom: 0.25em;
+  letter-spacing: -0.02em;
+}
+.reveal .slides section.viz-slide .deck-badge {
+  margin-bottom: 0.35em;
+}
+.reveal .slides section.viz-slide .slide-split {
+  margin-top: 6px;
+  align-items: stretch;
+  width: 100%;
+}
+.reveal .slides section.viz-slide .slide-split > div:first-child ul li {
+  font-size: 0.88em;
+  line-height: 1.45;
+}
+.reveal .slides section.viz-slide .slide-split > div {
+  min-width: 0;
+}
+.reveal .slides section.viz-slide .split-right .viz-wrap {
+  height: 100%;
+  min-height: 260px;
+}
+
+/* Dark glass panel for all interactive viz */
+.reveal .slides section.viz-slide .viz-wrap {
+  background: linear-gradient(155deg, rgba(15, 21, 37, 0.98), rgba(26, 34, 56, 0.92));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.reveal .slides section.viz-slide .viz-wrap.viz-embed {
+  padding: 12px 14px;
+}
+
+/* N-gram compare */
+.reveal .slides section.viz-slide #ctx-btns {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.reveal .slides section.viz-slide .cb {
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  background: rgba(10, 15, 28, 0.85) !important;
+  color: var(--muted) !important;
+  padding: 6px 14px !important;
+  font-size: 0.52em !important;
+  cursor: pointer;
+  font-family: var(--font-mono) !important;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.reveal .slides section.viz-slide .cb:hover {
+  color: var(--text) !important;
+  border-color: rgba(138, 180, 255, 0.45) !important;
+}
+.reveal .slides section.viz-slide .cb.active {
+  background: rgba(138, 180, 255, 0.12) !important;
+  border-color: rgba(138, 180, 255, 0.55) !important;
+  color: var(--accent3) !important;
+  box-shadow: 0 0 20px rgba(138, 180, 255, 0.12);
+}
+.reveal .slides section.viz-slide #ctx-lbl {
+  font-family: var(--font-mono) !important;
+  font-size: 0.48em !important;
+  background: rgba(10, 15, 28, 0.9) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  padding: 10px 12px !important;
+  margin-bottom: 10px !important;
+  color: var(--text) !important;
+  white-space: pre-wrap !important;
+  line-height: 1.45 !important;
+}
+.reveal .slides section.viz-slide #dist-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 900px) {
+  .reveal .slides section.viz-slide #dist-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.reveal .slides section.viz-slide .dist-head {
+  font-size: 0.5em !important;
+  font-weight: 700 !important;
+  margin: 0 0 6px !important;
+  font-family: var(--font-head) !important;
+  letter-spacing: 0.04em;
+}
+.reveal .slides section.viz-slide .dist-note {
+  font-size: 0.44em !important;
+  color: var(--muted) !important;
+  margin: 8px 0 0 !important;
+  line-height: 1.45 !important;
+}
+
+/* Attn live */
+.reveal .slides section.viz-slide #t-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.reveal .slides section.viz-slide .tb {
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  background: rgba(10, 15, 28, 0.85) !important;
+  color: var(--text) !important;
+  padding: 6px 12px !important;
+  font-size: 0.52em !important;
+  cursor: pointer;
+  font-family: var(--font-mono) !important;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.reveal .slides section.viz-slide .tb:hover {
+  border-color: rgba(138, 180, 255, 0.45) !important;
+}
+.reveal .slides section.viz-slide .tb.active {
+  border-color: rgba(138, 180, 255, 0.6) !important;
+  background: rgba(138, 180, 255, 0.1) !important;
+  color: var(--accent3) !important;
+  box-shadow: 0 0 18px rgba(138, 180, 255, 0.12);
+}
+.reveal .slides section.viz-slide #h-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+  align-items: center;
+}
+.reveal .slides section.viz-slide #h-row .bl {
+  font-size: 0.48em !important;
+  color: var(--muted) !important;
+  font-family: var(--font-mono) !important;
+}
+.reveal .slides section.viz-slide .hl {
+  border-radius: 999px !important;
+  padding: 4px 10px !important;
+  font-size: 0.48em !important;
+  cursor: pointer;
+  border: 1px solid transparent !important;
+  opacity: 0.5 !important;
+  transition: opacity 0.15s, border-color 0.15s, box-shadow 0.15s;
+  font-family: var(--font-head) !important;
+  font-weight: 700 !important;
+}
+.reveal .slides section.viz-slide .hl.on {
+  opacity: 1 !important;
+  border-color: currentColor !important;
+  box-shadow: 0 0 12px currentColor;
+}
+.reveal .slides section.viz-slide #ins {
+  font-size: 0.48em !important;
+  color: var(--muted) !important;
+  margin-top: 8px !important;
+  min-height: 2em !important;
+  line-height: 1.45 !important;
+  font-family: var(--font-mono) !important;
+}
+.reveal .slides section.viz-slide #a-svg {
+  width: 100% !important;
+  display: block;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
+}
+
+/* Embedded softmax / temperature */
+.reveal .slides section.viz-slide .embed-row {
+  display: grid;
+  grid-template-columns: 32px 1fr 48px;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0;
+  font-size: 0.62em;
+}
+.reveal .slides section.viz-slide .embed-row input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent3);
+  min-height: 20px;
+}
+.reveal .slides section.viz-slide .embed-bar-wrap {
+  height: 18px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.reveal .slides section.viz-slide .embed-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--accent3), var(--accent));
+  transition: width 0.2s ease;
+}
+.reveal .slides section.viz-slide .embed-temp-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-size: 0.65em;
+  font-family: var(--font-head);
+  font-weight: 800;
+  color: var(--accent2);
+}
+.reveal .slides section.viz-slide .embed-temp-label input[type="range"] {
+  flex: 1;
+  max-width: 280px;
+  accent-color: var(--accent2);
 }
 
 /* ── Reference-style layout (badges, split columns, key idea cards) ───── */
@@ -621,468 +832,38 @@
   color: var(--accent3);
   font-weight: 700;
 }
+
+/* Floating link — survives markdown replace (outside .slides) */
+a.deck-explorer-link {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 40;
+  font-family: var(--font-head);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--accent3);
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(10, 15, 28, 0.92);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+a.deck-explorer-link:hover {
+  color: var(--accent);
+  border-color: rgba(94, 233, 200, 0.45);
+}
 </style>
 </head>
 <body>
+<a class="deck-explorer-link" href="artifacts/explorer/index.html" target="_blank" rel="noopener noreferrer">Visual lab ↗</a>
 <div class="reveal">
 <div class="slides">
-
-<!-- ══════════════════════════════════════════════════════ TITLE -->
-<section id="title-slide">
-  <div class="eyebrow">2-Hour Deep Dive · 2026</div>
-  <h1>LLMs:<br><span>Inside Out</span></h1>
-  <div class="subtitle">From Transformers to Agents</div>
-  <div class="meta">
-    Instructor: <span>Your Name</span> &nbsp;·&nbsp;
-    Institution: <span>Your Institution</span>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════════════════════ AGENDA -->
-<section>
-  <h2>Today's Agenda</h2>
-  <div class="cols c2">
-    <div>
-      <h3>Hour 1 — Lecture</h3>
-      <ul>
-        <li>How LLMs actually work</li>
-        <li>The full training stack</li>
-        <li>Capabilities &amp; honest limits</li>
-        <li>LLMs as scientists (AI Scientist)</li>
-      </ul>
-    </div>
-    <div>
-      <h3>Hour 2 — Hands-On</h3>
-      <ul>
-        <li>Feel the limits of a vanilla LLM</li>
-        <li>Build a RAG pipeline from scratch</li>
-        <li>Break it and fix it</li>
-        <li><em>Demo:</em> Fine-tuning a real model</li>
-      </ul>
-    </div>
-  </div>
-  <div class="alert" style="margin-top:20px">
-    <span class="alert-label">Goal</span>
-    Leave today able to <strong>explain</strong> how LLMs work, <strong>build</strong> a RAG pipeline,
-    and <strong>critically evaluate</strong> what LLMs can and cannot do.
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════════════════════ SECTION 1 -->
-<section class="section-slide">
-  <div class="section-num">01</div>
-  <h2>How LLMs<br>Actually Work</h2>
-  <div class="desc">Tokenisation · Attention · nanoGPT · Scaling laws</div>
-</section>
-
-<!-- ── The core idea -->
-<section>
-  <h2>The Core Idea</h2>
-  <div class="eq-box" style="font-size:1.1em; margin: 20px 0 24px;">
-    P( next token | context )
-    <small>A single objective trained across trillions of tokens</small>
-  </div>
-  <ul>
-    <li>No symbolic rules, no hand-crafted grammar — only <strong>gradient descent</strong></li>
-    <li>Emergent capabilities appear at scale: instruction following, reasoning, code</li>
-  </ul>
-  <div class="alert red" style="margin-top:20px">
-    <span class="alert-label">The surprising part</span>
-    This single objective is sufficient to learn language, facts, reasoning patterns,
-    and even theory of mind. Nobody fully understands why.
-  </div>
-</section>
-
-<!-- ── Tokenisation -->
-<section>
-  <h2>Tokenisation</h2>
-  <div class="cols c2l">
-    <ul>
-      <li>Models don't see <em>words</em> — they see <strong>tokens</strong></li>
-      <li>Byte-Pair Encoding (BPE): iteratively merge the most frequent byte pairs</li>
-      <li><code>"unbelievable"</code> → <code>["un","believ","able"]</code></li>
-      <li>Numbers tokenise poorly — <code>"1024"</code> may split into 1–3 tokens</li>
-      <li>Vocabulary size ≈ 50k–100k tokens</li>
-    </ul>
-    <div class="card blue">
-      <h3>Try it</h3>
-<pre><code><span class="kw">import</span> tiktoken
-enc = tiktoken.get_encoding(
-    <span class="st">"cl100k_base"</span>)
-enc.encode(<span class="st">"Hello, world!"</span>)
-<span class="cm"># [9906, 11, 1917, 0]</span></code></pre>
-    </div>
-  </div>
-</section>
-
-<!-- ── Attention -->
-<section>
-  <h2>Attention Intuition</h2>
-  <div style="font-size:0.8em; margin: 16px 0 20px; display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-    <span class="tag">The</span>
-    <span class="tag" style="border-color:rgba(74,240,196,0.8);background:rgba(74,240,196,0.2)">cat <small style="color:var(--accent)">0.6</small></span>
-    <span class="tag">sat</span>
-    <span class="tag">on</span>
-    <span class="tag">the <small style="color:var(--accent3)">0.3</small></span>
-    <span class="tag blue">mat ←</span>
-    <span style="color:var(--muted); margin-left:8px; font-size:0.85em">predicting the next token after "mat"</span>
-  </div>
-  <ul>
-    <li><strong>Self-attention:</strong> every token asks "which other tokens should influence me?"</li>
-    <li><strong>Multi-head attention:</strong> run this query in parallel across h subspaces</li>
-    <li><strong>Position encodings:</strong> inject token order — otherwise the model is a bag of tokens</li>
-  </ul>
-</section>
-
-<!-- ── nanoGPT -->
-<section>
-  <h2>nanoGPT — GPT in ~300 Lines</h2>
-  <div class="cols c2l">
-    <ul>
-      <li>Andrej Karpathy's <strong>nanoGPT</strong> strips GPT-2 to its essence</li>
-      <li>Key files: <code>model.py</code>, <code>train.py</code>, <code>sample.py</code></li>
-      <li>The entire forward pass is ~50 lines of readable PyTorch</li>
-      <li><strong>Key insight:</strong> GPT-4 is nanoGPT + 4 orders of magnitude + engineering</li>
-    </ul>
-<pre><code><span class="kw">class</span> <span class="nm">Block</span>(nn.Module):
-  <span class="kw">def</span> <span class="nm">__init__</span>(self, cfg):
-    super().__init__()
-    self.ln_1 = LayerNorm(cfg.n_embd)
-    self.attn = CausalSelfAttention(cfg)
-    self.ln_2 = LayerNorm(cfg.n_embd)
-    self.mlp  = MLP(cfg)
-
-  <span class="kw">def</span> <span class="nm">forward</span>(self, x):
-    x = x + self.attn(self.ln_1(x))
-    x = x + self.mlp(self.ln_2(x))
-    <span class="kw">return</span> x</code></pre>
-  </div>
-</section>
-
-<!-- ── Scaling laws -->
-<section>
-  <h2>Scaling Laws</h2>
-  <div class="cols c2">
-    <ul>
-      <li>Kaplan et al. (2020) &amp; Hoffmann et al. — Chinchilla (2022)</li>
-      <li>Loss follows a <strong>power law</strong> in parameters N and tokens D</li>
-      <li>Optimal ratio: <strong>D ≈ 20 × N</strong> (Chinchilla scaling)</li>
-      <li>GPT-3 (175B params) was <em>under-trained</em> by this rule</li>
-      <li>Implication: <strong>data</strong> is often the bottleneck, not compute</li>
-    </ul>
-    <div>
-      <div class="eq-box">
-        L(N,D) = A/N^α + B/D^β + L∞
-        <small>irreducible loss + model-size term + data term</small>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════════════════════ SECTION 2 -->
-<section class="section-slide">
-  <div class="section-num">02</div>
-  <h2>The Full<br>Training Stack</h2>
-  <div class="desc">Pretraining · SFT · LoRA / QLoRA · RLHF · DPO</div>
-</section>
-
-<!-- ── Pretraining pipeline -->
-<section>
-  <h2>From Pretraining to Assistant</h2>
-  <div class="pipeline" style="margin: 24px 0;">
-    <div class="pipe-box"><strong>Pretraining</strong><small>next-token prediction</small></div>
-    <div class="pipe-arrow">→</div>
-    <div class="pipe-box"><strong>SFT</strong><small>instruction tuning</small></div>
-    <div class="pipe-arrow">→</div>
-    <div class="pipe-box"><strong>RLHF / DPO</strong><small>preference alignment</small></div>
-    <div class="pipe-arrow">→</div>
-    <div class="pipe-box" style="border-color:var(--accent)"><strong>Assistant</strong><small>GPT-4, Claude…</small></div>
-  </div>
-  <ul>
-    <li>Each stage <strong>narrows the distribution</strong> — from "predict anything" to "be helpful"</li>
-    <li>Base models are <em>weird</em>: prompt with a toxic prefix and they'll complete it</li>
-    <li>Alignment does not lobotomise the model — it redirects it</li>
-  </ul>
-</section>
-
-<!-- ── LoRA -->
-<section>
-  <h2>Full Fine-Tuning vs. LoRA / QLoRA</h2>
-  <div class="cols c2">
-    <div>
-      <h3>Full fine-tuning</h3>
-      <ul>
-        <li>Update <em>all</em> weights</li>
-        <li>Best performance ceiling</li>
-        <li>Requires full model in GPU VRAM</li>
-        <li>Catastrophic forgetting risk</li>
-      </ul>
-      <h3 style="margin-top:16px">LoRA (Hu et al., 2022)</h3>
-      <ul>
-        <li>Freeze base weights W₀</li>
-        <li>Add low-rank adapter: <strong>W = W₀ + BA</strong>, r ≪ d</li>
-        <li>7B model: 7B params → ~10M trainable</li>
-        <li>QLoRA: quantise base to 4-bit, train adapters in 16-bit</li>
-      </ul>
-    </div>
-<pre><code>LoraConfig(
-  r=<span class="nm">16</span>,           <span class="cm"># rank</span>
-  lora_alpha=<span class="nm">32</span>,  <span class="cm"># scaling</span>
-  target_modules=[
-    <span class="st">"q_proj"</span>,
-    <span class="st">"v_proj"</span>],
-  lora_dropout=<span class="nm">0.05</span>,
-  bias=<span class="st">"none"</span>,
-  task_type=<span class="st">"CAUSAL_LM"</span>
-)</code></pre>
-  </div>
-</section>
-
-<!-- ── DPO -->
-<section>
-  <h2>RLHF vs. DPO</h2>
-  <div class="cols c2">
-    <div>
-      <h3>RLHF (InstructGPT, 2022)</h3>
-      <ul>
-        <li>Train a <strong>reward model</strong> on human preferences</li>
-        <li>Use PPO to optimise the policy against that reward</li>
-        <li>Complex, expensive, prone to reward hacking</li>
-      </ul>
-      <h3 style="margin-top:16px">DPO (Rafailov et al., 2023)</h3>
-      <ul>
-        <li>Skip the reward model entirely</li>
-        <li>Train directly on (chosen y_w, rejected y_l) pairs</li>
-        <li><strong>Same result, far simpler pipeline</strong></li>
-      </ul>
-    </div>
-    <div class="card blue">
-      <h3>DPO loss (intuition)</h3>
-      <div class="eq-box" style="font-size:0.78em; margin-top:8px; text-align:left; line-height:1.7">
-        L = -E[ log σ(<br>
-        &nbsp;&nbsp;β·log π(y_w|x)/π_ref(y_w|x)<br>
-        &nbsp;&nbsp;- β·log π(y_l|x)/π_ref(y_l|x)<br>
-        ) ]
-        <small>Maximise log-ratio of policy probability for <em>chosen</em> over <em>rejected</em></small>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ── Decision table -->
-<section>
-  <h2>Prompting vs. RAG vs. Fine-Tuning</h2>
-  <table style="margin: 16px 0;">
-    <thead>
-      <tr>
-        <th>Criterion</th>
-        <th>Prompting</th>
-        <th>RAG</th>
-        <th>Fine-tuning</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr><td>Knowledge freshness</td><td class="no">Stale</td><td class="yes">✓ Live</td><td class="no">Stale until retrain</td></tr>
-      <tr><td>Custom style / format</td><td class="no">Partial</td><td class="no">✗</td><td class="yes">✓ Yes</td></tr>
-      <tr><td>Private document corpus</td><td class="no">✗</td><td class="yes">✓ Yes</td><td class="no">Leakage risk</td></tr>
-      <tr><td>Latency</td><td class="yes">✓ Fast</td><td class="no">Medium</td><td class="yes">✓ Fast</td></tr>
-      <tr><td>Cost</td><td class="yes">✓ Low</td><td class="no">Medium</td><td class="no">High</td></tr>
-    </tbody>
-  </table>
-  <div class="alert">
-    <span class="alert-label">Rule of thumb</span>
-    Start with prompting → add RAG when the model lacks knowledge → fine-tune only when
-    behaviour cannot be prompted away.
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════════════════════ SECTION 3 -->
-<section class="section-slide">
-  <div class="section-num">03</div>
-  <h2>Capabilities &amp;<br>Honest Limits</h2>
-  <div class="desc">What works · What fails · Benchmarks · Stochastic parrots</div>
-</section>
-
-<!-- ── Strengths & failures -->
-<section>
-  <h2>What LLMs Are (and Aren't) Good At</h2>
-  <div class="cols c2" style="gap:20px">
-    <div class="card green">
-      <h3>✓ Strengths</h3>
-      <ul>
-        <li>Text synthesis, summarisation, translation</li>
-        <li>Code generation &amp; explanation</li>
-        <li>Few-shot analogical reasoning</li>
-        <li>Information extraction from unstructured text</li>
-        <li>Chain-of-thought on well-defined problems</li>
-      </ul>
-    </div>
-    <div class="card red">
-      <h3>✗ Reliable Failures</h3>
-      <ul>
-        <li><strong>Hallucination</strong> — confident fabrication of facts</li>
-        <li>Arithmetic and precise counting</li>
-        <li>Knowledge cutoff — no live data</li>
-        <li>Long-context degradation ("lost in the middle")</li>
-        <li>Consistent multi-step planning</li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<!-- ── Benchmarks -->
-<section>
-  <h2>Benchmarks — Useful and Gameable</h2>
-  <ul>
-    <li><strong>MMLU</strong> — 57 subjects, multiple choice; tests broad knowledge</li>
-    <li><strong>HumanEval</strong> — Python coding problems; tests functional correctness</li>
-    <li><strong>MATH</strong> — competition mathematics; tests symbolic reasoning</li>
-    <li><strong>GPQA</strong> — PhD-level science questions; harder to overfit</li>
-  </ul>
-  <div class="alert red" style="margin-top:20px">
-    <span class="alert-label">The contamination problem</span>
-    Benchmark datasets leak into pretraining corpora. A model scoring 90% on MMLU
-    may have seen those questions. <strong>Always ask: was this benchmark held out?</strong>
-  </div>
-</section>
-
-<!-- ── Stochastic parrot -->
-<section>
-  <h2>The Stochastic Parrot Debate</h2>
-  <div class="cols c2" style="gap:20px">
-    <div class="card red">
-      <h3>Bender et al. (2021)</h3>
-      <ul>
-        <li>Manipulates form without grounding in meaning</li>
-        <li>No model of the world — only statistical co-occurrence</li>
-        <li>Fluency ≠ understanding</li>
-        <li>Significant environmental &amp; labour costs of scale</li>
-      </ul>
-    </div>
-    <div class="card blue">
-      <h3>Counterpoints</h3>
-      <ul>
-        <li>Emergent reasoning on novel problems suggests some generalisation</li>
-        <li>"Understanding" is not well-defined even for humans</li>
-        <li>Strong performance on held-out tasks is hard to explain by copying alone</li>
-      </ul>
-    </div>
-  </div>
-  <div class="alert" style="margin-top:16px">
-    <span class="alert-label">The honest answer</span>
-    The debate is unsettled. Be sceptical of both "it's just autocomplete" and "it's AGI."
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════════════════════ SECTION 4 -->
-<section class="section-slide">
-  <div class="section-num">04</div>
-  <h2>LLMs as<br>Scientists</h2>
-  <div class="desc">The AI Scientist · RAG as memory · Agents</div>
-</section>
-
-<!-- ── AI Scientist -->
-<section>
-  <h2>The AI Scientist (Lu et al., 2024)</h2>
-  <div class="pipeline" style="margin: 20px 0;">
-    <div class="pipe-box"><strong>Idea</strong><small>Generation</small></div>
-    <div class="pipe-arrow">→</div>
-    <div class="pipe-box"><strong>Experiment</strong><small>runs Python code</small></div>
-    <div class="pipe-arrow">→</div>
-    <div class="pipe-box"><strong>Analysis</strong><small>retrieves related work</small></div>
-    <div class="pipe-arrow">→</div>
-    <div class="pipe-box"><strong>Paper</strong><small>LaTeX generation</small></div>
-    <div class="pipe-arrow">→</div>
-    <div class="pipe-box" style="border-color:var(--accent2)"><strong>Review</strong><small>automated</small></div>
-  </div>
-  <ul>
-    <li>Fully autonomous: idea → experiment → PDF paper, <strong>no human in the loop</strong></li>
-    <li>Uses <strong>RAG</strong> to retrieve related work before writing the introduction</li>
-    <li>Produced papers that passed automated reviewer checks at a NeurIPS-level bar</li>
-  </ul>
-</section>
-
-<!-- ── RAG as memory -->
-<section>
-  <h2>Why RAG is the Memory Layer</h2>
-  <div class="cols c2">
-    <ul>
-      <li>Context window ≈ 128k tokens ≈ ~300 pages</li>
-      <li>A research corpus has <strong>millions</strong> of papers</li>
-      <li>You cannot fit it all in context — you must <strong>retrieve first</strong></li>
-      <li>RAG = <strong>R</strong>etrieval-<strong>A</strong>ugmented <strong>G</strong>eneration</li>
-    </ul>
-    <div class="rag-flow">
-      <div class="rag-step">Query</div>
-      <div class="rag-step">Embed query</div>
-      <div class="rag-step">Retrieve top-k chunks</div>
-      <div class="rag-step">Build prompt + context</div>
-      <div class="rag-step">Generate answer</div>
-    </div>
-  </div>
-</section>
-
-<!-- ── Agents -->
-<section>
-  <h2>LLMs + Tools + Memory = Agents</h2>
-  <div style="display:flex; gap:32px; align-items:center; margin-top:16px">
-    <div class="agent-grid">
-      <div></div>
-      <div class="agent-node plan">Planner /<br>Orchestrator</div>
-      <div></div>
-      <div class="agent-node mem">Memory<br>(RAG)</div>
-      <div class="agent-node center">LLM<br>Core</div>
-      <div class="agent-node tools">Tools<br>(Code, APIs)</div>
-    </div>
-    <ul style="flex:1">
-      <li>Memory (RAG) gives the model <strong>knowledge beyond its context</strong></li>
-      <li>Tools let it take <strong>actions in the world</strong> (run code, call APIs)</li>
-      <li>A planner orchestrates <strong>multi-step reasoning loops</strong></li>
-      <li>The AI Scientist is exactly this architecture</li>
-    </ul>
-  </div>
-  <div class="alert" style="margin-top:16px; text-align:center; font-style:italic">
-    "You're about to build the memory layer. Let's go."
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════════════════════ RESOURCES -->
-<section>
-  <h2>Resources &amp; Next Steps</h2>
-  <div class="cols c2" style="gap:20px">
-    <div class="card">
-      <h3>Must-reads</h3>
-      <ul>
-        <li>Vaswani et al. (2017) — Attention is All You Need</li>
-        <li>Hoffmann et al. (2022) — Chinchilla scaling</li>
-        <li>Hu et al. (2022) — LoRA</li>
-        <li>Rafailov et al. (2023) — DPO</li>
-        <li>Lu et al. (2024) — The AI Scientist</li>
-      </ul>
-    </div>
-    <div class="card blue">
-      <h3>Practical resources</h3>
-      <ul>
-        <li>youtube.com/@AndrejKarpathy</li>
-        <li>Hugging Face TRL docs (DPO &amp; SFT)</li>
-        <li>simonwillison.net</li>
-        <li>github.com/karpathy/nanoGPT</li>
-        <li>github.com/SakanaAI/AI-Scientist</li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════════════════════ Q&A -->
-<section style="text-align:center; justify-content:center !important; align-items:center !important;">
-  <div style="font-family:var(--font-head); font-size:5em; font-weight:800; color:var(--accent); line-height:1">Q&amp;A</div>
-  <div style="color:var(--muted); margin-top:16px; font-size:0.85em">your.email@institution.edu</div>
-  <div style="margin-top:24px">
-    <span class="tag">Colab notebook: [link]</span>
-    <span class="tag blue">Slides: [link]</span>
-  </div>
-</section>
-
+  <!-- Deck content: slides.md (injected by script below when served over HTTP). -->
 </div><!-- /slides -->
 </div><!-- /reveal -->
 
@@ -1091,8 +872,7 @@ enc.encode(<span class="st">"Hello, world!"</span>)
 <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/highlight/highlight.min.js"></script>
 <script src="slides-viz.js"></script>
 <script>
-// Swap the hardcoded slide markup with external `slides.md`.
-// This keeps the rest of the styling/CSS in this file intact.
+// Deck body lives in `slides.md` (not duplicated in this HTML file).
 (() => {
   const slidesEl = document.querySelector(".slides");
   if (!slidesEl) return;

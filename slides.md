@@ -449,18 +449,6 @@ Token IDs
 <div class="viz-hint">Try both stories: <strong>left</strong> = bigram (only the last token matters). <strong>Right</strong> = transformer (full passage). Watch how the top guesses and the bars change.</div>
 
 <div class="viz-wrap">
-<style>
-#ctx-btns { display:flex; gap:8px; margin-bottom:10px; }
-.cb { border:1px solid #ccc; border-radius:6px; background:#f7f7f7; color:#555;
-      padding:3px 14px; font-size:0.52em; cursor:pointer; font-family:inherit; transition:background .15s; }
-.cb.active { background:#ece9ff; border-color:#6C63FF; color:#6C63FF; }
-#ctx-lbl { font-family:monospace; font-size:0.48em; background:#f5f5f5; border:1px solid #e2e2e2;
-           border-radius:6px; padding:6px 10px; margin-bottom:10px; color:#333; white-space:pre-wrap; line-height:1.4; }
-#dist-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-.dist-head { font-size:0.5em; font-weight:600; color:#555; margin:0 0 4px; }
-.dist-note { font-size:0.44em; color:#888; margin:4px 0 0; line-height:1.4; }
-</style>
-
 <div id="ctx-btns">
   <button class="cb active" data-ctx="alice" type="button">Alice in Wonderland</button>
   <button class="cb" data-ctx="code" type="button">Python code</button>
@@ -468,12 +456,12 @@ Token IDs
 <div id="ctx-lbl"></div>
 <div id="dist-grid">
   <div>
-    <p class="dist-head" style="color:#534AB7">N-gram model (bigram)</p>
+    <p class="dist-head" style="color:#9b8fff">N-gram model (bigram)</p>
     <svg id="ng-svg" width="100%" viewBox="0 0 300 210"></svg>
     <p class="dist-note" id="ng-note"></p>
   </div>
   <div>
-    <p class="dist-head" style="color:#1D9E75">Transformer</p>
+    <p class="dist-head" style="color:#5ee9c8">Transformer</p>
     <svg id="tr-svg" width="100%" viewBox="0 0 300 210"></svg>
     <p class="dist-note" id="tr-note"></p>
   </div>
@@ -656,23 +644,6 @@ Input X
 <div class="viz-hint">Pick the <strong>query</strong> word (bottom row), then toggle <strong>heads</strong>. Thicker curves = stronger attention from that query to each token; blended colors = mixing active heads.</div>
 
 <div class="viz-wrap" id="attn-wrap">
-<style>
-.viz-slide { padding: 0.4em 1em !important; }
-.viz-hint  { font-size:0.55em; color:#888; margin:-0.3em 0 0.4em; }
-.viz-wrap  { width:100%; }
-#t-row     { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
-.tb { border:1px solid #ccc; border-radius:6px; background:#f7f7f7;
-      color:#222; padding:4px 12px; font-size:0.55em; cursor:pointer;
-      transition:background .15s,border-color .15s; font-family:inherit; }
-.tb.active { border-color:#6C63FF; color:#6C63FF; background:#ece9ff; }
-#h-row  { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; align-items:center; }
-.hl     { border-radius:99px; padding:2px 9px; font-size:0.5em; cursor:pointer;
-          border:1px solid transparent; opacity:0.45; transition:opacity .15s; }
-.hl.on  { opacity:1; border-color:currentColor; }
-#a-svg  { width:100%; display:block; }
-#ins    { font-size:0.5em; color:#555; margin-top:6px; min-height:2em; line-height:1.5; }
-.bl     { font-size:0.5em; color:#888; font-family:inherit; }
-</style>
 <div id="t-row"></div>
 <div id="h-row">
   <span class="bl">Heads:</span>
@@ -1041,7 +1012,7 @@ Same model weights — different **decoding** can change tone, diversity, and fa
 
 ---
 
-<!-- .slide: class="ref-slide" -->
+<!-- .slide: class="viz-slide" -->
 <div class="deck-badge">01 · Generation</div>
 
 ## Logits → probabilities (softmax)
@@ -1049,25 +1020,18 @@ Same model weights — different **decoding** can change tone, diversity, and fa
 <div class="slide-split">
 <div>
 
-- Model outputs one raw score per vocab entry (**logits**)
-- `softmax` converts to a legal probability table: all positive, sums to 1
-- Larger logits dominate the probability mass
+- Raw scores **z** per token (**logits**)
+- **Softmax** → probabilities, **sum = 1**
 
 `pᵢ = exp(zᵢ) / Σⱼ exp(zⱼ)`
 
 </div>
 <div class="split-right">
 
-```text
-token:  A     B     C     D     E
-logit:  3.0   2.0   1.0   0.0  -1.0
-           ↓ softmax
-prob:   0.67  0.25  0.09  0.03  0.01
-        █████ ███  ██   █    .
-
-Highest logit → most probability.
-All probs sum to 1.0.
-```
+<div class="viz-wrap viz-embed">
+<div class="viz-hint">Drag **z** — watch mass shift. (Illustrative 5-way.)</div>
+<div id="embed-softmax-root"></div>
+</div>
 
 </div>
 </div>
@@ -1077,7 +1041,7 @@ All probs sum to 1.0.
 
 ---
 
-<!-- .slide: class="ref-slide" -->
+<!-- .slide: class="viz-slide" -->
 <div class="deck-badge">01 · Generation</div>
 
 ## Temperature reshapes the distribution
@@ -1085,26 +1049,17 @@ All probs sum to 1.0.
 <div class="slide-split">
 <div>
 
-- Rescale logits before softmax: `z′ = z / T`
-- **T < 1** → sharper (more confident, safer)
-- **T > 1** → flatter (more random, creative)
-- T = 1 is the baseline (no rescaling)
+- `z′ = z / T` before softmax
+- **T ↓** sharper · **T ↑** flatter
+- Same weights — different roll of the dice
 
 </div>
 <div class="split-right">
 
-```text
-logits:  3.0  2.0  1.0  0.0  -1.0
-
-T=0.7    .79  .17  .03  .01  .00
-         █████ ██
-
-T=1.0    .67  .25  .09  .03  .01
-         ████  ███  █
-
-T=1.3    .54  .27  .13  .05  .02
-         ███  ███  ██  █   .
-```
+<div class="viz-wrap viz-embed">
+<div class="viz-hint">Fixed logits — only **T** scales uncertainty.</div>
+<div id="embed-temp-root"></div>
+</div>
 
 </div>
 </div>
