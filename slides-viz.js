@@ -118,8 +118,8 @@
     function renderD() {
       var d = DATA[cur];
       section.querySelector("#ctx-lbl").textContent = d.ctx;
-      drawBars(section.querySelector("#ng-svg"), d.ng, "#534AB7");
-      drawBars(section.querySelector("#tr-svg"), d.tr, "#1D9E75");
+      drawBars(section.querySelector("#ng-svg"), d.ng, "#7c6fd9");
+      drawBars(section.querySelector("#tr-svg"), d.tr, "#3dd4b8");
       section.querySelector("#ng-note").textContent = d.ng.note;
       section.querySelector("#tr-note").textContent = d.tr.note;
     }
