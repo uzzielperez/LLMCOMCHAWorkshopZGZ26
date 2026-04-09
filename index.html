@@ -51,6 +51,31 @@
   justify-content: center;
 }
 
+/* ── Deck title (first slide from slides.md) ───────────────────────────── */
+.reveal .slides section.deck-title {
+  justify-content: flex-end !important;
+  padding-bottom: 56px !important;
+  font-size: 28px;
+}
+.reveal .slides section.deck-title h1 {
+  font-size: 3.2em;
+  line-height: 1.05;
+  margin-bottom: 0.25em;
+}
+.reveal .slides section.deck-title h1 strong { color: var(--accent); }
+.reveal .slides section.deck-title .deck-subtitle {
+  font-size: 1.1em;
+  color: var(--muted);
+  margin: 0 0 6px;
+  font-style: normal;
+}
+.reveal .slides section.deck-title .deck-author {
+  font-size: 0.85em;
+  color: var(--accent3);
+  margin: 0;
+  letter-spacing: 0.04em;
+}
+
 /* ── Headings ───────────────────────────────────────────────────────────── */
 .reveal h1, .reveal h2, .reveal h3 {
   font-family: var(--font-head);
@@ -223,7 +248,7 @@
 /* ── Table ──────────────────────────────────────────────────────────────── */
 .reveal table {
   border-collapse: collapse;
-  font-size: 0.75em;
+  font-size: 0.85em;
   width: 100%;
 }
 .reveal table th {
@@ -352,6 +377,152 @@
 
 /* ── Scrollable slide content if overflow ───────────────────────────────── */
 .reveal .slides section.scrollable { overflow-y: auto; }
+
+/* ── Visualization slides ─────────────────────────────────── */
+.reveal .slides section.viz-slide {
+  padding: 0.6rem 1.2rem !important;
+  font-size: 22px;
+}
+.reveal .slides section.viz-slide h2 {
+  font-size: 1.1em;
+  margin-bottom: 0.2em;
+}
+
+/* ── Reference-style layout (badges, split columns, key idea cards) ───── */
+.reveal .slides section.ref-slide {
+  justify-content: flex-start;
+  padding-top: 1.6rem !important;
+  font-size: 26px;
+}
+.reveal .slides section.ref-slide h2 {
+  font-size: 1.5em;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-bottom: 0.3em;
+  color: #e4e9ff;
+}
+.reveal .slides section.ref-slide h2::after {
+  display: none;
+}
+.reveal .slides section.ref-slide ul li {
+  font-size: 0.92em;
+  line-height: 1.55;
+}
+.reveal .slides section.ref-slide pre {
+  font-size: 0.82em;
+  line-height: 1.5;
+  padding: 14px 18px;
+}
+.reveal .slides section .deck-badge {
+  display: inline-block;
+  font-family: var(--font-head);
+  font-size: 0.5em;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent3);
+  background: rgba(123, 156, 255, 0.1);
+  border: 1px solid rgba(123, 156, 255, 0.35);
+  padding: 6px 14px;
+  border-radius: 999px;
+  margin: 0 0 8px;
+}
+.reveal .slides section .slide-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 28px;
+  align-items: start;
+  width: 100%;
+  margin-top: 4px;
+}
+@media (max-width: 1100px) {
+  .reveal .slides section .slide-split {
+    grid-template-columns: 1fr;
+  }
+}
+.reveal .slides section .slide-split .split-right pre {
+  margin: 0;
+  font-size: 0.72em;
+  min-height: 10em;
+  line-height: 1.45;
+}
+.reveal .slides section .key-grid {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  margin-top: 6px;
+}
+.reveal .slides section .key-grid.cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 900px) {
+  .reveal .slides section .key-grid.cols-2 {
+    grid-template-columns: 1fr;
+  }
+}
+.reveal .slides section .key-box {
+  margin: 0;
+  padding: 14px 16px 14px 18px;
+  font-size: 0.88em;
+  line-height: 1.45;
+  color: var(--text);
+  background: linear-gradient(145deg, rgba(26, 34, 56, 0.95), rgba(15, 21, 37, 0.98));
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent3);
+  border-radius: 8px;
+  box-sizing: border-box;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+.reveal .slides section .key-box .key-box-title {
+  display: block;
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 1.1em;
+  color: #c8d4ff;
+  margin-bottom: 6px;
+  letter-spacing: -0.02em;
+}
+.reveal .slides section .key-box p {
+  margin: 0;
+  color: rgba(232, 234, 242, 0.88);
+  font-size: 0.98em;
+}
+
+/* Key-idea boxes (slides.md) — match key-box “card” look */
+.reveal .slides section .takeaway {
+  margin-top: 1em;
+  padding: 14px 18px;
+  font-size: 0.95em;
+  line-height: 1.5;
+  color: rgba(232, 234, 242, 0.92);
+  background: linear-gradient(145deg, rgba(26, 34, 56, 0.95), rgba(15, 21, 37, 0.98));
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent3);
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-style: normal;
+  box-sizing: border-box;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+.reveal .slides section.viz-slide .takeaway {
+  font-size: 0.82em;
+  margin-top: 0.85em;
+  padding: 12px 14px;
+  line-height: 1.45;
+}
+
+.reveal .slides section .viz-hint {
+  font-size: 0.72em;
+  line-height: 1.35;
+  color: var(--muted);
+  margin-bottom: 0.35em;
+  max-width: 52em;
+}
+.reveal .slides section .viz-hint strong {
+  color: var(--accent3);
+  font-weight: 700;
+}
 </style>
 </head>
 <body>
@@ -820,6 +991,7 @@ enc.encode(<span class="st">"Hello, world!"</span>)
 <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/markdown/markdown.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/highlight/highlight.min.js"></script>
+<script src="slides-viz.js"></script>
 <script>
 // Swap the hardcoded slide markup with external `slides.md`.
 // This keeps the rest of the styling/CSS in this file intact.
@@ -827,7 +999,16 @@ enc.encode(<span class="st">"Hello, world!"</span>)
   const slidesEl = document.querySelector(".slides");
   if (!slidesEl) return;
 
-  // Use a template literal to avoid any quoting/escaping issues.
+  if (window.location.protocol === "file:") {
+    slidesEl.innerHTML = `
+      <section>
+        <h2>Run via HTTP</h2>
+        <p>Open this deck from a local HTTP server (not <code>file://</code>) so markdown can load.</p>
+      </section>
+    `.trim();
+    return;
+  }
+
   slidesEl.innerHTML = `
     <section data-markdown="slides.md" data-separator="^---\\s*$"></section>
   `.trim();
