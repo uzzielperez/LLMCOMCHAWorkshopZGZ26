@@ -1,0 +1,932 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLMs: Inside Out</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reset.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.css">
+<style>
+/* ── Root variables — “lab terminal” palette (mint + electric blue on ink) ─ */
+:root {
+  --bg:        #050810;
+  --bg2:       #0a1020;
+  --bg3:       #121a2e;
+  --surface:   #182236;
+  --border:    #2a3550;
+  --accent:    #5ee9c8;
+  --accent2:   #ff6b6b;
+  --accent3:   #8ab4ff;
+  --text:      #e9ecf5;
+  --muted:     #8892ae;
+  --code-bg:   #070b14;
+  --glow-mint: rgba(94, 233, 200, 0.12);
+  --glow-blue: rgba(138, 180, 255, 0.08);
+  --font-head: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* ── Base ───────────────────────────────────────────────────────────────── */
+.reveal-viewport {
+  position: relative;
+  background:
+    radial-gradient(120% 80% at 100% 0%, var(--glow-blue) 0%, transparent 55%),
+    radial-gradient(90% 70% at 0% 100%, var(--glow-mint) 0%, transparent 50%),
+    linear-gradient(165deg, var(--bg) 0%, #0a0f1c 45%, var(--bg2) 100%);
+}
+.reveal {
+  position: relative;
+  z-index: 2;
+  font-family: var(--font-mono);
+  color: var(--text);
+  font-size: 18px;
+  font-feature-settings: "liga" 1, "calt" 1;
+}
+
+/* Grid + vignette + film grain (atmosphere, not noise) */
+.reveal-viewport::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(94, 233, 200, 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(94, 233, 200, 0.028) 1px, transparent 1px),
+    radial-gradient(ellipse 85% 65% at 50% 50%, transparent 40%, rgba(0, 0, 0, 0.55) 100%);
+  background-size: 44px 44px, 44px 44px, 100% 100%;
+}
+.reveal-viewport::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.055;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal-viewport::after { opacity: 0.035; }
+}
+
+/* ── Slide base ─────────────────────────────────────────────────────────── */
+.reveal .slides section {
+  text-align: left;
+  padding: 0 60px;
+  box-sizing: border-box;
+  height: 100%;
+  display: flex !important;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* ── Deck title (first slide from slides.md) ───────────────────────────── */
+.reveal .slides section.deck-title {
+  justify-content: flex-end !important;
+  padding-bottom: 56px !important;
+  font-size: 28px;
+  position: relative;
+}
+.reveal .slides section.deck-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 18%;
+  width: 5px;
+  height: min(42%, 280px);
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--accent) 0%, transparent 85%);
+  opacity: 0.85;
+  box-shadow: 0 0 24px rgba(94, 233, 200, 0.25);
+  pointer-events: none;
+}
+.reveal .slides section.deck-title h1 {
+  font-size: 3.2em;
+  line-height: 1.05;
+  margin-bottom: 0.25em;
+  letter-spacing: -0.04em;
+}
+.reveal .slides section.deck-title h1 strong {
+  color: var(--accent);
+  text-shadow: 0 0 40px rgba(94, 233, 200, 0.25);
+}
+.reveal .slides section.deck-title .deck-subtitle {
+  font-size: 1.1em;
+  color: var(--muted);
+  margin: 0 0 6px;
+  font-style: normal;
+}
+.reveal .slides section.deck-title .deck-author {
+  font-size: 0.85em;
+  color: var(--accent3);
+  margin: 0;
+  letter-spacing: 0.04em;
+}
+
+/* ── Headings ───────────────────────────────────────────────────────────── */
+.reveal h1, .reveal h2, .reveal h3 {
+  font-family: var(--font-head);
+  color: var(--text);
+  text-transform: none;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.5em;
+}
+.reveal h1 { font-size: 2.6em; font-weight: 800; line-height: 1.1; }
+.reveal h2 { font-size: 1.6em; font-weight: 700; }
+.reveal h2::after {
+  content: '';
+  display: block;
+  width: 52px;
+  height: 4px;
+  margin-top: 10px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent3) 100%);
+  box-shadow: 0 0 18px rgba(94, 233, 200, 0.35);
+}
+.reveal h3 { font-size: 1.1em; font-weight: 700; color: var(--accent); }
+
+/* ── Lists ──────────────────────────────────────────────────────────────── */
+.reveal ul { list-style: none; padding: 0; margin: 0; }
+.reveal ul li {
+  padding: 5px 0 5px 1.4em;
+  position: relative;
+  color: var(--text);
+  font-size: 0.88em;
+  line-height: 1.6;
+}
+.reveal ul li::before {
+  content: '▸';
+  color: var(--accent);
+  position: absolute; left: 0;
+  font-size: 0.85em;
+}
+.reveal ul ul li::before { color: var(--accent3); content: '◦'; }
+.reveal ul ul li { font-size: 0.9em; color: var(--muted); }
+
+/* ── Code ───────────────────────────────────────────────────────────────── */
+.reveal pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  padding: 16px 20px;
+  font-size: 0.72em;
+  line-height: 1.6;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(94, 233, 200, 0.04) inset;
+  width: 100%;
+  margin: 0;
+  white-space: pre;
+  overflow-x: auto;
+}
+.reveal code { font-family: var(--font-mono); color: var(--accent); background: none; }
+.reveal pre code { color: #c8d3f5; background: none; padding: 0; }
+
+/* ── Keyword highlights inside pre ─────────────────────────────────────── */
+.kw  { color: #7b9cff; }
+.st  { color: #f0a060; }
+.cm  { color: #4a5568; font-style: italic; }
+.nm  { color: #4af0c4; }
+.op  { color: #f06060; }
+
+/* ── Accent text ────────────────────────────────────────────────────────── */
+.reveal strong { color: var(--accent); font-weight: 700; }
+.reveal em { color: var(--accent3); font-style: normal; }
+
+/* ── Tag/pill ───────────────────────────────────────────────────────────── */
+.tag {
+  display: inline-block;
+  background: rgba(74,240,196,0.12);
+  border: 1px solid rgba(74,240,196,0.3);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.7em;
+  padding: 2px 10px;
+  border-radius: 2px;
+  margin: 2px 3px;
+}
+.tag.red   { background: rgba(240,96,96,0.12); border-color: rgba(240,96,96,0.3); color: var(--accent2); }
+.tag.blue  { background: rgba(123,156,255,0.12); border-color: rgba(123,156,255,0.3); color: var(--accent3); }
+
+/* ── Cards / panels ─────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px 20px;
+  font-size: 0.82em;
+}
+.card.green { border-left: 3px solid var(--accent); }
+.card.red   { border-left: 3px solid var(--accent2); }
+.card.blue  { border-left: 3px solid var(--accent3); }
+.card h3 { margin: 0 0 8px; font-size: 0.9em; }
+
+/* ── Two-column layout ──────────────────────────────────────────────────── */
+.cols { display: grid; gap: 28px; }
+.cols.c2 { grid-template-columns: 1fr 1fr; }
+.cols.c2l { grid-template-columns: 1.1fr 0.9fr; }
+
+/* ── Pipeline / flow diagrams ───────────────────────────────────────────── */
+.pipeline {
+  display: flex; align-items: center; gap: 0;
+  flex-wrap: nowrap; margin: 16px 0;
+}
+.pipe-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px 14px;
+  font-size: 0.72em;
+  text-align: center;
+  flex: 1;
+  line-height: 1.3;
+}
+.pipe-box strong { display: block; color: var(--accent); font-size: 1.05em; }
+.pipe-box small { color: var(--muted); font-size: 0.85em; }
+.pipe-arrow {
+  color: var(--accent);
+  font-size: 1.1em;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+.pipe-arrow.loop {
+  writing-mode: horizontal-tb;
+  display: block;
+  text-align: center;
+  color: var(--accent2);
+}
+
+/* ── RAG vertical flow ──────────────────────────────────────────────────── */
+.rag-flow { display: flex; flex-direction: column; gap: 6px; }
+.rag-step {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent3);
+  border-radius: 4px;
+  padding: 8px 14px;
+  font-size: 0.75em;
+}
+.rag-step::before { content: '↓ '; color: var(--muted); }
+.rag-step:first-child::before { content: ''; }
+
+/* ── Agent circles ──────────────────────────────────────────────────────── */
+.agent-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 12px;
+  align-items: center;
+  justify-items: center;
+  max-width: 500px;
+  margin: 0 auto;
+}
+.agent-node {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  width: 100px; height: 100px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  font-size: 0.7em; font-weight: 700;
+  text-align: center; line-height: 1.3;
+}
+.agent-node.center { border-color: var(--accent); color: var(--accent); }
+.agent-node.mem    { border-color: var(--accent3); color: var(--accent3); }
+.agent-node.tools  { border-color: var(--accent2); color: var(--accent2); }
+.agent-node.plan   { border-color: #f0c060; color: #f0c060; }
+
+/* ── Table ──────────────────────────────────────────────────────────────── */
+.reveal table {
+  border-collapse: collapse;
+  font-size: 0.85em;
+  width: 100%;
+}
+.reveal table th {
+  border-bottom: 2px solid var(--accent);
+  padding: 8px 12px;
+  text-align: left;
+  color: var(--accent);
+  font-family: var(--font-head);
+  font-weight: 700;
+}
+.reveal table td {
+  border-bottom: 1px solid var(--border);
+  padding: 7px 12px;
+  color: var(--text);
+}
+.reveal table tr:hover td { background: var(--surface); }
+.yes { color: var(--accent); font-weight: 700; }
+.no  { color: var(--muted); }
+
+/* ── Pull quotes (markdown blockquotes) ─────────────────────────────────── */
+.reveal blockquote {
+  margin: 0.75em 0;
+  padding: 14px 18px 14px 20px;
+  border-left: 4px solid var(--accent3);
+  background: linear-gradient(90deg, rgba(138, 180, 255, 0.06) 0%, transparent 65%);
+  font-size: 0.92em;
+  line-height: 1.55;
+  color: rgba(233, 236, 245, 0.95);
+  font-style: italic;
+  border-radius: 0 8px 8px 0;
+}
+.reveal blockquote strong { font-style: normal; }
+
+/* ── Alert box ──────────────────────────────────────────────────────────── */
+.alert {
+  background: rgba(74,240,196,0.07);
+  border: 1px solid rgba(74,240,196,0.25);
+  border-radius: 4px;
+  padding: 12px 18px;
+  font-size: 0.8em;
+  margin-top: 12px;
+  line-height: 1.5;
+}
+.alert.red {
+  background: rgba(240,96,96,0.07);
+  border-color: rgba(240,96,96,0.25);
+}
+.alert-label {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 4px;
+}
+.alert.red .alert-label { color: var(--accent2); }
+
+/* ── Title slide ────────────────────────────────────────────────────────── */
+#title-slide {
+  justify-content: flex-end !important;
+  padding-bottom: 60px !important;
+}
+#title-slide .eyebrow {
+  font-size: 0.72em;
+  color: var(--accent);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+#title-slide h1 { font-size: 3.2em; line-height: 1.0; margin-bottom: 16px; }
+#title-slide h1 span { color: var(--accent); }
+#title-slide .subtitle {
+  font-size: 0.85em;
+  color: var(--muted);
+  margin-bottom: 32px;
+}
+#title-slide .meta {
+  display: flex; gap: 24px;
+  font-size: 0.72em; color: var(--muted);
+}
+#title-slide .meta span { color: var(--text); }
+
+/* ── Section dividers ───────────────────────────────────────────────────── */
+.section-slide {
+  justify-content: center !important;
+  align-items: flex-start !important;
+}
+.section-slide .section-num {
+  font-size: 6em;
+  font-family: var(--font-head);
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: -20px;
+  background: linear-gradient(135deg, rgba(94, 233, 200, 0.14) 0%, rgba(138, 180, 255, 0.1) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.section-slide h1 {
+  font-size: 6em;
+  font-family: var(--font-head);
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: -20px;
+  background: linear-gradient(135deg, rgba(94, 233, 200, 0.14) 0%, rgba(138, 180, 255, 0.1) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.section-slide h2 { font-size: 2.2em; }
+.section-slide h2::after { display: none; }
+.section-slide .desc { color: var(--muted); font-size: 0.8em; margin-top: 12px; }
+
+/* ── Equation display ───────────────────────────────────────────────────── */
+.eq-box {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent3);
+  border-radius: 4px;
+  padding: 14px 20px;
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  color: var(--accent3);
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+.eq-box small { display: block; color: var(--muted); font-size: 0.8em; margin-top: 6px; }
+
+/* ── Progress bar ───────────────────────────────────────────────────────── */
+.reveal .progress { background: rgba(42, 53, 80, 0.6); height: 4px; }
+.reveal .progress span {
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent3) 100%);
+  box-shadow: 0 0 12px rgba(94, 233, 200, 0.45);
+}
+
+/* ── Slide number ───────────────────────────────────────────────────────── */
+.reveal .slide-number {
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.65em;
+}
+
+/* ── Fragment animations ────────────────────────────────────────────────── */
+.reveal .fragment { opacity: 0.15; }
+.reveal .fragment.visible { opacity: 1; }
+
+/* Staggered title reveal (deck open only; respects reduced motion) */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes deckTitleReveal {
+    from { opacity: 0; transform: translateY(22px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .reveal .slides section.deck-title.present h1 {
+    animation: deckTitleReveal 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .reveal .slides section.deck-title.present .deck-subtitle {
+    animation: deckTitleReveal 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
+  }
+  .reveal .slides section.deck-title.present .deck-author {
+    animation: deckTitleReveal 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.16s both;
+  }
+}
+
+/* ── Scrollable slide content if overflow ───────────────────────────────── */
+.reveal .slides section.scrollable { overflow-y: auto; }
+
+/* ── Visualization slides (same “lab” chrome as Multi-Head Live) ─────────── */
+.reveal .slides section.viz-slide {
+  padding: 0.55rem 1.1rem !important;
+  font-size: 22px;
+  justify-content: flex-start;
+}
+.reveal .slides section.viz-slide h2 {
+  font-size: 1.12em;
+  margin-bottom: 0.25em;
+  letter-spacing: -0.02em;
+}
+.reveal .slides section.viz-slide .deck-badge {
+  margin-bottom: 0.35em;
+}
+.reveal .slides section.viz-slide .slide-split {
+  margin-top: 6px;
+  align-items: stretch;
+  width: 100%;
+}
+.reveal .slides section.viz-slide .slide-split > div:first-child ul li {
+  font-size: 0.88em;
+  line-height: 1.45;
+}
+.reveal .slides section.viz-slide .slide-split > div {
+  min-width: 0;
+}
+.reveal .slides section.viz-slide .split-right .viz-wrap {
+  height: 100%;
+  min-height: 260px;
+}
+
+/* Dark glass panel for all interactive viz */
+.reveal .slides section.viz-slide .viz-wrap {
+  background: linear-gradient(155deg, rgba(15, 21, 37, 0.98), rgba(26, 34, 56, 0.92));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.reveal .slides section.viz-slide .viz-wrap.viz-embed {
+  padding: 12px 14px;
+}
+
+/* N-gram compare */
+.reveal .slides section.viz-slide #ctx-btns {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.reveal .slides section.viz-slide .cb {
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  background: rgba(10, 15, 28, 0.85) !important;
+  color: var(--muted) !important;
+  padding: 6px 14px !important;
+  font-size: 0.52em !important;
+  cursor: pointer;
+  font-family: var(--font-mono) !important;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.reveal .slides section.viz-slide .cb:hover {
+  color: var(--text) !important;
+  border-color: rgba(138, 180, 255, 0.45) !important;
+}
+.reveal .slides section.viz-slide .cb.active {
+  background: rgba(138, 180, 255, 0.12) !important;
+  border-color: rgba(138, 180, 255, 0.55) !important;
+  color: var(--accent3) !important;
+  box-shadow: 0 0 20px rgba(138, 180, 255, 0.12);
+}
+.reveal .slides section.viz-slide #ctx-lbl {
+  font-family: var(--font-mono) !important;
+  font-size: 0.48em !important;
+  background: rgba(10, 15, 28, 0.9) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  padding: 10px 12px !important;
+  margin-bottom: 10px !important;
+  color: var(--text) !important;
+  white-space: pre-wrap !important;
+  line-height: 1.45 !important;
+}
+.reveal .slides section.viz-slide #dist-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 900px) {
+  .reveal .slides section.viz-slide #dist-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.reveal .slides section.viz-slide .dist-head {
+  font-size: 0.5em !important;
+  font-weight: 700 !important;
+  margin: 0 0 6px !important;
+  font-family: var(--font-head) !important;
+  letter-spacing: 0.04em;
+}
+.reveal .slides section.viz-slide .dist-note {
+  font-size: 0.44em !important;
+  color: var(--muted) !important;
+  margin: 8px 0 0 !important;
+  line-height: 1.45 !important;
+}
+
+/* Attn live */
+.reveal .slides section.viz-slide #t-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.reveal .slides section.viz-slide .tb {
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  background: rgba(10, 15, 28, 0.85) !important;
+  color: var(--text) !important;
+  padding: 6px 12px !important;
+  font-size: 0.52em !important;
+  cursor: pointer;
+  font-family: var(--font-mono) !important;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.reveal .slides section.viz-slide .tb:hover {
+  border-color: rgba(138, 180, 255, 0.45) !important;
+}
+.reveal .slides section.viz-slide .tb.active {
+  border-color: rgba(138, 180, 255, 0.6) !important;
+  background: rgba(138, 180, 255, 0.1) !important;
+  color: var(--accent3) !important;
+  box-shadow: 0 0 18px rgba(138, 180, 255, 0.12);
+}
+.reveal .slides section.viz-slide #h-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+  align-items: center;
+}
+.reveal .slides section.viz-slide #h-row .bl {
+  font-size: 0.48em !important;
+  color: var(--muted) !important;
+  font-family: var(--font-mono) !important;
+}
+.reveal .slides section.viz-slide .hl {
+  border-radius: 999px !important;
+  padding: 4px 10px !important;
+  font-size: 0.48em !important;
+  cursor: pointer;
+  border: 1px solid transparent !important;
+  opacity: 0.5 !important;
+  transition: opacity 0.15s, border-color 0.15s, box-shadow 0.15s;
+  font-family: var(--font-head) !important;
+  font-weight: 700 !important;
+}
+.reveal .slides section.viz-slide .hl.on {
+  opacity: 1 !important;
+  border-color: currentColor !important;
+  box-shadow: 0 0 12px currentColor;
+}
+.reveal .slides section.viz-slide #ins {
+  font-size: 0.48em !important;
+  color: var(--muted) !important;
+  margin-top: 8px !important;
+  min-height: 2em !important;
+  line-height: 1.45 !important;
+  font-family: var(--font-mono) !important;
+}
+.reveal .slides section.viz-slide #a-svg {
+  width: 100% !important;
+  display: block;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
+}
+
+/* Embedded softmax / temperature */
+.reveal .slides section.viz-slide .embed-row {
+  display: grid;
+  grid-template-columns: 32px 1fr 48px;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0;
+  font-size: 0.62em;
+}
+.reveal .slides section.viz-slide .embed-row input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent3);
+  min-height: 20px;
+}
+.reveal .slides section.viz-slide .embed-bar-wrap {
+  height: 18px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.reveal .slides section.viz-slide .embed-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--accent3), var(--accent));
+  transition: width 0.2s ease;
+}
+.reveal .slides section.viz-slide .embed-temp-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-size: 0.65em;
+  font-family: var(--font-head);
+  font-weight: 800;
+  color: var(--accent2);
+}
+.reveal .slides section.viz-slide .embed-temp-label input[type="range"] {
+  flex: 1;
+  max-width: 280px;
+  accent-color: var(--accent2);
+}
+
+/* ── Reference-style layout (badges, split columns, key idea cards) ───── */
+.reveal .slides section.ref-slide {
+  justify-content: flex-start;
+  padding-top: 1.6rem !important;
+  font-size: 26px;
+}
+.reveal .slides section.ref-slide h2 {
+  font-size: 1.5em;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-bottom: 0.3em;
+  color: #e4e9ff;
+}
+.reveal .slides section.ref-slide h2::after {
+  display: none;
+}
+.reveal .slides section.ref-slide ul li {
+  font-size: 0.92em;
+  line-height: 1.55;
+}
+.reveal .slides section.ref-slide pre {
+  font-size: 0.82em;
+  line-height: 1.5;
+  padding: 14px 18px;
+}
+.reveal .slides section .deck-badge {
+  display: inline-block;
+  font-family: var(--font-head);
+  font-size: 0.5em;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #b8ccff;
+  background: linear-gradient(135deg, rgba(138, 180, 255, 0.12) 0%, rgba(94, 233, 200, 0.06) 100%);
+  border: 1px solid rgba(138, 180, 255, 0.35);
+  padding: 6px 14px;
+  border-radius: 999px;
+  margin: 0 0 8px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2) inset;
+}
+.reveal .slides section .slide-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 28px;
+  align-items: start;
+  width: 100%;
+  margin-top: 4px;
+}
+@media (max-width: 1100px) {
+  .reveal .slides section .slide-split {
+    grid-template-columns: 1fr;
+  }
+}
+.reveal .slides section .slide-split .split-right pre {
+  margin: 0;
+  font-size: 0.72em;
+  min-height: 10em;
+  line-height: 1.45;
+}
+.reveal .slides section .key-grid {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  margin-top: 6px;
+}
+.reveal .slides section .key-grid.cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 900px) {
+  .reveal .slides section .key-grid.cols-2 {
+    grid-template-columns: 1fr;
+  }
+}
+.reveal .slides section .key-box {
+  margin: 0;
+  padding: 14px 16px 14px 18px;
+  font-size: 0.88em;
+  line-height: 1.45;
+  color: var(--text);
+  background: linear-gradient(145deg, rgba(26, 34, 56, 0.95), rgba(15, 21, 37, 0.98));
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent3);
+  border-radius: 8px;
+  box-sizing: border-box;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+.reveal .slides section .key-box .key-box-title {
+  display: block;
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 1.1em;
+  color: #c8d4ff;
+  margin-bottom: 6px;
+  letter-spacing: -0.02em;
+}
+.reveal .slides section .key-box p {
+  margin: 0;
+  color: rgba(232, 234, 242, 0.88);
+  font-size: 0.98em;
+}
+
+/* Key-idea boxes (slides.md) — match key-box “card” look */
+.reveal .slides section .takeaway {
+  margin-top: 1em;
+  padding: 14px 18px;
+  font-size: 0.95em;
+  line-height: 1.5;
+  color: rgba(232, 234, 242, 0.92);
+  background: linear-gradient(145deg, rgba(26, 34, 56, 0.95), rgba(15, 21, 37, 0.98));
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent3);
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-style: normal;
+  box-sizing: border-box;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+.reveal .slides section.viz-slide .takeaway {
+  font-size: 0.82em;
+  margin-top: 0.85em;
+  padding: 12px 14px;
+  line-height: 1.45;
+}
+
+.reveal .slides section .viz-hint {
+  font-size: 0.72em;
+  line-height: 1.35;
+  color: var(--muted);
+  margin-bottom: 0.35em;
+  max-width: 52em;
+}
+.reveal .slides section .viz-hint strong {
+  color: var(--accent3);
+  font-weight: 700;
+}
+
+/* Floating link — survives markdown replace (outside .slides) */
+a.deck-explorer-link {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 40;
+  font-family: var(--font-head);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--accent3);
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(10, 15, 28, 0.92);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+a.deck-explorer-link:hover {
+  color: var(--accent);
+  border-color: rgba(94, 233, 200, 0.45);
+}
+
+/* YouTube embed (slides.md) — 16:9, fits slide width */
+.reveal .slides section .embed-youtube-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 920px;
+  margin: 0.5em auto 0;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  background: #000;
+}
+.reveal .slides section .embed-youtube {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+</style>
+</head>
+<body>
+<a class="deck-explorer-link" href="artifacts/explorer/index.html" target="_blank" rel="noopener noreferrer">Visual lab ↗</a>
+<div class="reveal">
+<div class="slides">
+  <!-- Deck content: slides.md (injected by script below when served over HTTP). -->
+</div><!-- /slides -->
+</div><!-- /reveal -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/markdown/markdown.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/highlight/highlight.min.js"></script>
+<script src="slides-viz.js"></script>
+<script>
+// Deck body lives in `slides.md` (not duplicated in this HTML file).
+(() => {
+  const slidesEl = document.querySelector(".slides");
+  if (!slidesEl) return;
+
+  if (window.location.protocol === "file:") {
+    slidesEl.innerHTML = `
+      <section>
+        <h2>Run via HTTP</h2>
+        <p>Open this deck from a local HTTP server (not <code>file://</code>) so markdown can load.</p>
+      </section>
+    `.trim();
+    return;
+  }
+
+  slidesEl.innerHTML = `
+    <section data-markdown="slides.md" data-separator="^---\\s*$"></section>
+  `.trim();
+})();
+
+Reveal.initialize({
+  hash: true,
+  slideNumber: 'c/t',
+  progress: true,
+  transition: 'slide',
+  transitionSpeed: 'fast',
+  backgroundTransition: 'fade',
+  controls: true,
+  center: true,
+  width: 1280,
+  height: 720,
+  margin: 0.08,
+  plugins: [ RevealMarkdown, RevealHighlight ]
+});
+</script>
+</body>
+</html>
